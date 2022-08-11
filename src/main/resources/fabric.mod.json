@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "omms-controller-fabric",
+  "version": "${version}",
+  "name": "Omms Controller Fabric",
+  "description": "Fabric side OMMS",
+  "authors": [
+    "ZhuRuoLing"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/omms-controller-fabric/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "net.zhuruoling.omms.controller.fabric.OmmsControllerFabric"
+    ]
+  },
+  "mixins": [
+    "omms-controller-fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.12.0",
+    "fabric": "*",
+    "minecraft": "1.18.1"
+  }
+}
