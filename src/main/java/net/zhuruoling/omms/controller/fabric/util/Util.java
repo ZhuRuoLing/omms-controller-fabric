@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
+import org.lwjgl.system.CallbackI;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -12,6 +13,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -92,6 +94,19 @@ public class Util {
         return Texts.join(texts,new LiteralText(""));
     }
 
+
+    public static Text fromBroadcast(Broadcast broadcast){
+        Style style = Style.EMPTY;
+        List<Text> texts = List.of(new LiteralText(broadcast.channel).setStyle(style.withColor(Formatting.AQUA)),
+                new LiteralText(" <"),
+                new LiteralText(broadcast.player).setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.server, "OMMS CENTRAL"))),
+                new LiteralText("["),
+                new LiteralText(broadcast.server).setStyle(style.withColor(Formatting.GREEN)),
+                new LiteralText("]> "),
+                new LiteralText(broadcast.content)
+        );
+        return Texts.join(texts, Text.of(""));
+    }
 
     public static void sendBroadcast(UdpBroadcastSender.Target target, String text, String playerName) {
         Broadcast broadcast = new Broadcast(playerName, text);

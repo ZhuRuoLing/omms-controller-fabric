@@ -18,6 +18,7 @@ import net.minecraft.util.registry.Registry;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import net.zhuruoling.omms.controller.fabric.menu.MenuBlock;
 import net.zhuruoling.omms.controller.fabric.menu.MenuBlockEntity;
+import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastReceiver;
 import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 
@@ -50,8 +51,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                             return -1;
                         }
                         String data = compound.getString("servers");
-                        context.getSource().sendFeedback(Text.of("Fuck U"), false);
-                        context.getSource().sendFeedback(Text.of(data), true);
                         String[] servers = new GsonBuilder().serializeNulls().create().fromJson(data, String[].class);
                         ArrayList<Text> serverEntries = new ArrayList<>();
                         String currentServer = ConstantStorage.getWhitelistName();
@@ -78,16 +77,24 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            var reciever = new UdpBroadcastReceiver(server);
             var sender = new UdpBroadcastSender();
+            reciever.setDaemon(true);
+            sender.setDaemon(true);
             sender.start();
+            reciever.start();
             ConstantStorage.setSender(sender);
+            ConstantStorage.setReceiver(reciever);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             ConstantStorage.getSender().setStopped(true);
+            ConstantStorage.getReceiver().interrupt();
+
         });
 
         ServerLifecycleEvents.SERVER_STOPPED.register( server -> {
             ConstantStorage.getSender().setStopped(true);
+            ConstantStorage.getReceiver().interrupt();
         });
     }
 }
