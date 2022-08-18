@@ -6,7 +6,7 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.zhuruoling.omms.controller.fabric.config.Config;
+import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -32,11 +32,11 @@ public abstract class PlayerJoinMixin {
     private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir){
         try {
             String player = profile.getName();
-            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.getHttpQueryAddress(),Config.getHttpQueryPort(),player);
+            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),player);
             String result = getPlayerInWhitelists(url);
             Gson gson = new GsonBuilder().serializeNulls().create();
             String[] whitelists = gson.fromJson(result,String[].class);
-            if (Arrays.stream(whitelists).toList().contains(Config.getWhitelistName())){
+            if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())){
                 LOGGER.info("Successfully authed player %s".formatted(player));
                 cir.setReturnValue(null);
             }

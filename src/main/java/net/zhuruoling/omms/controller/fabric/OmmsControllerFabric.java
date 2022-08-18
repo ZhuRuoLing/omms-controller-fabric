@@ -1,53 +1,93 @@
 package net.zhuruoling.omms.controller.fabric;
 
-import com.mojang.brigadier.Message;
-import net.fabricmc.api.ModInitializer;
+import com.google.gson.GsonBuilder;
+import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
+import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.command.argument.NbtCompoundArgumentType;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.zhuruoling.omms.controller.fabric.config.Config;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
+import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
+import net.zhuruoling.omms.controller.fabric.menu.MenuBlock;
+import net.zhuruoling.omms.controller.fabric.menu.MenuBlockEntity;
+import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastSender;
+import net.zhuruoling.omms.controller.fabric.util.Util;
 
+import java.util.ArrayList;
+import java.util.Objects;
+
+import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
-public class OmmsControllerFabric implements ModInitializer {
+public class OmmsControllerFabric implements DedicatedServerModInitializer {
+    public static final BlockEntityType<MenuBlockEntity> MENU_BLOCK_ENTITY;
+    public static final Block MENU_BLOCK;
+    public static final Identifier MENU = new Identifier("omms", "menu");
+
+    static {
+        MENU_BLOCK = Registry.register(Registry.BLOCK, MENU, new MenuBlock(FabricBlockSettings.copyOf(Blocks.CHEST)));
+        MENU_BLOCK_ENTITY = Registry.register(Registry.BLOCK_ENTITY_TYPE, MENU, FabricBlockEntityTypeBuilder.create(MenuBlockEntity::new, MENU_BLOCK).build(null));
+    }
 
     @Override
-    public void onInitialize() {
-        Config.init();
+    public void onInitializeServer() {
+        ConstantStorage.init();
 
-        var handler = new NamedScreenHandlerFactory() {
-            @Override
-            public Text getDisplayName() {
-                return Texts.toText(() -> "YEE");
-            }
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> dispatcher.register(literal("menu")
+                .then(argument("data", NbtCompoundArgumentType.nbtCompound()).requires(source -> source.hasPermissionLevel(0)).executes(context -> {
+                    try {
+                        NbtCompound compound = NbtCompoundArgumentType.getNbtCompound(context, "data");
+                        if (!compound.contains("servers")) {
+                            context.getSource().sendError(Text.of("Wrong server data."));
+                            return -1;
+                        }
+                        String data = compound.getString("servers");
+                        context.getSource().sendFeedback(Text.of("Fuck U"), false);
+                        context.getSource().sendFeedback(Text.of(data), true);
+                        String[] servers = new GsonBuilder().serializeNulls().create().fromJson(data, String[].class);
+                        ArrayList<Text> serverEntries = new ArrayList<>();
+                        String currentServer = ConstantStorage.getWhitelistName();
+                        for (String server : servers) {
+                            boolean isCurrentServer = Objects.equals(currentServer, server);
+                            ConstantStorage.ServerMapping mapping = ConstantStorage.getServerMappings().get(server);
+                            if (Objects.isNull(mapping)) {
+                                serverEntries.add(Util.fromServerString(server, null, false, true));
+                                continue;
+                            }
+                            serverEntries.add(Util.fromServerString(mapping.getDisplayName(), mapping.getProxyName(), isCurrentServer, false));
+                        }
+                        Text serverText = Texts.join(serverEntries, Util.SPACE);
+                        context.getSource().sendFeedback(Text.of("----------Welcome to %s server!----------".formatted(ConstantStorage.getControllerName())), false);
+                        context.getSource().sendFeedback(Text.of("    "), false);
+                        context.getSource().sendFeedback(serverText, false);
+                        return 1;
 
-            @Override
-            public @NotNull ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity player) {
-                var handler = GenericContainerScreenHandler.createGeneric9x3(syncId, inv);
-                return handler;
-            }
-        };
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return 1;
+                }))));
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
-            dispatcher.register(literal("menu").executes(context -> {
-                var player = context.getSource().getPlayer();
-                player.openHandledScreen(handler);
-                return 1;
-            }));
-        });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-
+            var sender = new UdpBroadcastSender();
+            sender.start();
+            ConstantStorage.setSender(sender);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            ;
+            ConstantStorage.getSender().setStopped(true);
+        });
+
+        ServerLifecycleEvents.SERVER_STOPPED.register( server -> {
+            ConstantStorage.getSender().setStopped(true);
         });
     }
 }

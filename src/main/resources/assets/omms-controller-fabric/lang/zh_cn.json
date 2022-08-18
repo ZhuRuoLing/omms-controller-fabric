@@ -1,0 +1,6 @@
+{
+  "omms.strings.greeting": "----------欢迎来到%s服务器!----------",
+  "omms.strings.server_hover_text": "去%s服务器",
+  "omms.strings.server_current": "当前服务器",
+  "omms.strings.missing_key": "找不到对应的服务器名称映射，点击传送功能不可用，请联系你的服务器管理员。"
+}

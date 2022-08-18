@@ -1,0 +1,6 @@
+{
+  "omms.strings.greeting": "----------Welcome to %s server!----------",
+  "omms.strings.server_hover_text": "Goto server %s",
+  "omms.strings.server_current": "Current server",
+  "omms.strings.missing_key": "Missing mapping,one-key server teleporting won`t work,please contact your server manager."
+}

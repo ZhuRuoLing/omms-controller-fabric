@@ -27,12 +27,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class SimpleConfig {
@@ -117,15 +119,23 @@ public class SimpleConfig {
     }
 
     private void loadConfig() throws IOException {
+        Properties properties = new Properties();
+        properties.load(new FileReader(request.file, StandardCharsets.UTF_8));
+        properties.forEach((k,v) -> {
+            config.put((String) k, (String) v);
+        });
+        /*
         Scanner reader = new Scanner( request.file );
         for( int line = 1; reader.hasNextLine(); line ++ ) {
             parseConfigEntry( reader.nextLine(), line );
         }
+         */
     }
 
     private void parseConfigEntry( String entry, int line ) {
         if( !entry.isEmpty() && !entry.startsWith( "#" ) ) {
             String[] parts = entry.split("=", 2);
+            LOGGER.info(parts);
             if( parts.length == 2 ) {
                 config.put( parts[0], parts[1] );
             }else{

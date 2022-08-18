@@ -9,7 +9,8 @@
   ],
   "server": [
     "PlayerReadyMixin",
-    "PlayerJoinMixin"
+    "PlayerJoinMixin",
+    "PlayerChatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

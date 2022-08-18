@@ -1,8 +1,10 @@
 package net.zhuruoling.omms.controller.fabric.config;
 
+import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastSender;
+
 import java.util.HashMap;
 
-public class Config {
+public class ConstantStorage {
     private static boolean enable = false;
     private static String httpQueryAddress;
     private static int httpQueryPort;
@@ -12,7 +14,17 @@ public class Config {
     private static String chatChannel;
     private static HashMap<String,ServerMapping> serverMappings;
 
-    private static String provider( String filename ) {
+    private static UdpBroadcastSender sender;
+
+    public static UdpBroadcastSender getSender() {
+        return sender;
+    }
+
+    public static void setSender(UdpBroadcastSender sender) {
+        ConstantStorage.sender = sender;
+    }
+
+    private static String provider(String filename ) {
         return """
                 #OMMS config
                 enable=false
@@ -25,7 +37,7 @@ public class Config {
                 serverMappings""";
     }
     public static void init(){
-        SimpleConfig config = SimpleConfig.of("omms").provider(Config::provider).request();
+        SimpleConfig config = SimpleConfig.of("omms").provider(ConstantStorage::provider).request();
         setEnable(config.getOrDefault("enable",false));
         setChatChannel(config.getOrDefault("channel","GLOBAL"));
         setControllerName(config.getOrDefault("controllerName", "omms-controller"));
@@ -56,6 +68,7 @@ public class Config {
                 mapping.setProxyName(proxyName);
                 map.put(name,mapping);
             }
+            setServerMappings(map);
         }
         else {
             ServerMapping mapping = new ServerMapping();
@@ -72,6 +85,7 @@ public class Config {
             hashMap.put(serverMappingNames,mapping);
             setServerMappings(hashMap);
         }
+        System.out.println(serverMappings);
     }
 
     public static boolean isEnable() {
@@ -79,7 +93,7 @@ public class Config {
     }
 
     public static void setEnable(boolean enable) {
-        Config.enable = enable;
+        ConstantStorage.enable = enable;
     }
 
     public static String getHttpQueryAddress() {
@@ -87,7 +101,7 @@ public class Config {
     }
 
     public static void setHttpQueryAddress(String httpQueryAddress) {
-        Config.httpQueryAddress = httpQueryAddress;
+        ConstantStorage.httpQueryAddress = httpQueryAddress;
     }
 
     public static int getHttpQueryPort() {
@@ -95,7 +109,7 @@ public class Config {
     }
 
     public static void setHttpQueryPort(int httpQueryPort) {
-        Config.httpQueryPort = httpQueryPort;
+        ConstantStorage.httpQueryPort = httpQueryPort;
     }
 
     public static String getControllerName() {
@@ -103,7 +117,7 @@ public class Config {
     }
 
     public static void setControllerName(String controllerName) {
-        Config.controllerName = controllerName;
+        ConstantStorage.controllerName = controllerName;
     }
 
     public static String getWhitelistName() {
@@ -111,7 +125,7 @@ public class Config {
     }
 
     public static void setWhitelistName(String whitelistName) {
-        Config.whitelistName = whitelistName;
+        ConstantStorage.whitelistName = whitelistName;
     }
 
     public static String getUnixSocketFilePath() {
@@ -119,7 +133,7 @@ public class Config {
     }
 
     public static void setUnixSocketFilePath(String unixSocketFilePath) {
-        Config.unixSocketFilePath = unixSocketFilePath;
+        ConstantStorage.unixSocketFilePath = unixSocketFilePath;
     }
 
     public static String getChatChannel() {
@@ -127,7 +141,7 @@ public class Config {
     }
 
     public static void setChatChannel(String chatChannel) {
-        Config.chatChannel = chatChannel;
+        ConstantStorage.chatChannel = chatChannel;
     }
 
     public static HashMap<String, ServerMapping> getServerMappings() {
@@ -135,7 +149,7 @@ public class Config {
     }
 
     public static void setServerMappings(HashMap<String, ServerMapping> serverMappings) {
-        Config.serverMappings = serverMappings;
+        ConstantStorage.serverMappings = serverMappings;
     }
 
     public static class ServerMapping{
@@ -165,6 +179,15 @@ public class Config {
 
         public void setWhitelistName(String whitelistName) {
             this.whitelistName = whitelistName;
+        }
+
+        @Override
+        public String toString() {
+            return "ServerMapping{" +
+                    "displayName='" + displayName + '\'' +
+                    ", proxyName='" + proxyName + '\'' +
+                    ", whitelistName='" + whitelistName + '\'' +
+                    '}';
         }
     }
 
