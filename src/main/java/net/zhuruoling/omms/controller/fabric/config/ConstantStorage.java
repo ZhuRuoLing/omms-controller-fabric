@@ -1,7 +1,7 @@
 package net.zhuruoling.omms.controller.fabric.config;
 
-import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastReceiver;
-import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastSender;
+import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
+import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 
 import java.util.HashMap;
 
@@ -17,17 +17,27 @@ public class ConstantStorage {
 
     private static UdpBroadcastSender sender;
 
-    private static UdpBroadcastReceiver receiver;
+    private static UdpReceiver chatReceiver;
+    private static UdpReceiver instructionReceiver;
+
+    public static UdpReceiver getInstructionReceiver() {
+        return instructionReceiver;
+    }
+
+    public static void setInstructionReceiver(UdpReceiver instructionReceiver) {
+        ConstantStorage.instructionReceiver = instructionReceiver;
+    }
+
     public static UdpBroadcastSender getSender() {
         return sender;
     }
 
-    public static UdpBroadcastReceiver getReceiver() {
-        return receiver;
+    public static UdpReceiver getChatReceiver() {
+        return chatReceiver;
     }
 
-    public static void setReceiver(UdpBroadcastReceiver receiver) {
-        ConstantStorage.receiver = receiver;
+    public static void setChatReceiver(UdpReceiver receiver) {
+        ConstantStorage.chatReceiver = receiver;
     }
 
     public static void setSender(UdpBroadcastSender sender) {

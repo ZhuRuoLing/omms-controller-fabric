@@ -1,6 +1,8 @@
 package net.zhuruoling.omms.controller.fabric;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -9,9 +11,9 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
-import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastReceiver;
-import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastSender;
+import net.zhuruoling.omms.controller.fabric.network.*;
 import net.zhuruoling.omms.controller.fabric.util.Util;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -20,6 +22,8 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
+
+    private final Logger logger = LogUtils.getLogger();
 
     @Override
     public void onInitializeServer() {
@@ -59,24 +63,46 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            var reciever = new UdpBroadcastReceiver(server);
+            var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
+                var broadcast = new Gson().fromJson(m, Broadcast.class);
+                logger.info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
+                if (!Objects.equals(broadcast.getServer(), ConstantStorage.getControllerName())) {
+                    server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false);
+                }
+            });
+            var instructionReciver = new UdpReceiver(server, Util.TARGET_CONTROL, (s, m) -> {
+                Gson gson = new GsonBuilder().serializeNulls().create();
+                Instruction instruction = gson.fromJson(m, Instruction.class);
+                if (instruction.getControllerType() == ControllerTypes.FABRIC) {
+                    if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
+                        logger.info("Received Command: %s".formatted(instruction.getCommandString()));
+                        var dispatcher = server.getCommandManager().getDispatcher();
+                        var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
+                        server.getCommandManager().execute(results, instruction.getCommandString());
+                    }
+                }
+            });
             var sender = new UdpBroadcastSender();
-            reciever.setDaemon(true);
+            chatReceiver.setDaemon(true);
             sender.setDaemon(true);
+            instructionReciver.setDaemon(true);
+            instructionReciver.start();
             sender.start();
-            reciever.start();
+            chatReceiver.start();
             ConstantStorage.setSender(sender);
-            ConstantStorage.setReceiver(reciever);
+            ConstantStorage.setChatReceiver(chatReceiver);
+            ConstantStorage.setInstructionReceiver(instructionReciver);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             ConstantStorage.getSender().setStopped(true);
-            ConstantStorage.getReceiver().interrupt();
-
+            ConstantStorage.getChatReceiver().interrupt();
+            ConstantStorage.getInstructionReceiver().interrupt();
         });
 
-        ServerLifecycleEvents.SERVER_STOPPED.register( server -> {
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             ConstantStorage.getSender().setStopped(true);
-            ConstantStorage.getReceiver().interrupt();
+            ConstantStorage.getChatReceiver().interrupt();
+            ConstantStorage.getInstructionReceiver().interrupt();
         });
     }
 }

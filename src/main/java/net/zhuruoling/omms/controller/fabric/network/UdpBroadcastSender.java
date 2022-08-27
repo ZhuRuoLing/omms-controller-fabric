@@ -1,4 +1,4 @@
-package net.zhuruoling.omms.controller.fabric.util;
+package net.zhuruoling.omms.controller.fabric.network;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

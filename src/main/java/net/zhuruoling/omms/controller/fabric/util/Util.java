@@ -5,7 +5,8 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
-import org.lwjgl.system.CallbackI;
+import net.zhuruoling.omms.controller.fabric.network.Broadcast;
+import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -13,8 +14,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.text.Normalizer;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -98,13 +97,13 @@ public class Util {
     public static Text fromBroadcast(Broadcast broadcast){
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.channel).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
+        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
                 Text.of("<").copyContentOnly(),
-                Text.of(broadcast.player).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.server, "OMMS CENTRAL"))),
+                Text.of(broadcast.getPlayer()).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
                 LEFT_BRACKET.copyContentOnly(),
-                Text.of(broadcast.server).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
+                Text.of(broadcast.getServer()).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
                 Text.of("]>").copyContentOnly(),
-                Text.of(broadcast.content).copyContentOnly()
+                Text.of(broadcast.getContent()).copyContentOnly()
         );
         return Texts.join(texts, Text.of(""));
     }
