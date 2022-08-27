@@ -28,8 +28,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: validate gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
       - name: Build with Gradle
-        run: ./gradlew remapJar
+        uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
+        with:
+            arguments: remapJar
       - name: Create Dev Build
         run: |
           mkdir files
