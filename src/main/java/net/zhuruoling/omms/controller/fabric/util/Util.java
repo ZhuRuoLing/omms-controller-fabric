@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.Objects;
 
 public class Util {
-    public static final Text LEFT_BRACKET = new LiteralText("[");
-    public static final Text RIGHT_BRACKET = new LiteralText("]");
-    public static final Text SPACE = new LiteralText(" ");
+    public static final Text LEFT_BRACKET = Text.of("[");
+    public static final Text RIGHT_BRACKET = Text.of("]");
+    public static final Text SPACE = Text.of(" ");
 
     public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4",10086);
     public static final UdpBroadcastSender.Target TARGET_CONTROL = new UdpBroadcastSender.Target("224.114.51.4",10087);
@@ -89,21 +89,22 @@ public class Util {
                 style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Goto server %s".formatted(displayName))));
             }
         }
-        Text name = new LiteralText(displayName).setStyle(style);
+        Text name = Text.of(displayName).copyContentOnly().setStyle(style);
         List<Text> texts = List.of(Util.LEFT_BRACKET, name, Util.RIGHT_BRACKET);
-        return Texts.join(texts,new LiteralText(""));
+        return Texts.join(texts,Text.empty());
     }
 
 
     public static Text fromBroadcast(Broadcast broadcast){
         Style style = Style.EMPTY;
-        List<Text> texts = List.of(new LiteralText(broadcast.channel).setStyle(style.withColor(Formatting.AQUA)),
-                new LiteralText(" <"),
-                new LiteralText(broadcast.player).setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.server, "OMMS CENTRAL"))),
-                new LiteralText("["),
-                new LiteralText(broadcast.server).setStyle(style.withColor(Formatting.GREEN)),
-                new LiteralText("]> "),
-                new LiteralText(broadcast.content)
+
+        List<Text> texts = List.of(Text.of(broadcast.channel).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
+                Text.of("<").copyContentOnly(),
+                Text.of(broadcast.player).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.server, "OMMS CENTRAL"))),
+                LEFT_BRACKET.copyContentOnly(),
+                Text.of(broadcast.server).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
+                Text.of("]>").copyContentOnly(),
+                Text.of(broadcast.content).copyContentOnly()
         );
         return Texts.join(texts, Text.of(""));
     }

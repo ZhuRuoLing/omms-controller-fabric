@@ -2,22 +2,13 @@ package net.zhuruoling.omms.controller.fabric;
 
 import com.google.gson.GsonBuilder;
 import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
-import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.command.argument.NbtCompoundArgumentType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
-import net.zhuruoling.omms.controller.fabric.menu.MenuBlock;
-import net.zhuruoling.omms.controller.fabric.menu.MenuBlockEntity;
 import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastReceiver;
 import net.zhuruoling.omms.controller.fabric.util.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.util.Util;
@@ -29,20 +20,11 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
-    public static final BlockEntityType<MenuBlockEntity> MENU_BLOCK_ENTITY;
-    public static final Block MENU_BLOCK;
-    public static final Identifier MENU = new Identifier("omms", "menu");
-
-    static {
-        MENU_BLOCK = Registry.register(Registry.BLOCK, MENU, new MenuBlock(FabricBlockSettings.copyOf(Blocks.CHEST)));
-        MENU_BLOCK_ENTITY = Registry.register(Registry.BLOCK_ENTITY_TYPE, MENU, FabricBlockEntityTypeBuilder.create(MenuBlockEntity::new, MENU_BLOCK).build(null));
-    }
 
     @Override
     public void onInitializeServer() {
         ConstantStorage.init();
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> dispatcher.register(literal("menu")
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("menu")
                 .then(argument("data", NbtCompoundArgumentType.nbtCompound()).requires(source -> source.hasPermissionLevel(0)).executes(context -> {
                     try {
                         NbtCompound compound = NbtCompoundArgumentType.getNbtCompound(context, "data");

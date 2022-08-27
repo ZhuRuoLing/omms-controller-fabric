@@ -3,7 +3,7 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.MessageType;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -24,17 +24,25 @@ import static net.zhuruoling.omms.controller.fabric.util.Util.getPlayerInWhiteli
 
 @Mixin(PlayerManager.class)
 public class PlayerReadyMixin {
-    @Shadow @Final private static Logger LOGGER;
 
     @Shadow @Final private MinecraftServer server;
 
     @Inject(method = "onPlayerConnect",at = @At("RETURN"))
     private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci){
-        String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),player.getName().asString());
+        String playerName = player.getName().copyContentOnly().getString();
+        String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),playerName);
         String result = getPlayerInWhitelists(url);
         NbtCompound compound = new NbtCompound();
         compound.putString("servers", result);
-        Objects.requireNonNull(player.getServer()).getCommandManager().execute(player.getCommandSource(),"/menu %s".formatted(compound.asString()));
-        server.getPlayerManager().broadcast(Text.of("<%s> o/".formatted(player.getName().asString())), MessageType.CHAT, player.getUuid());
+        var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();
+
+        Objects.requireNonNull(player.getServer()).getCommandManager().execute(
+                dispatcher.parse(
+                        "menu %s".formatted(compound.asString())
+                        , player.getCommandSource()
+                )
+                ,"menu %s".formatted(compound.asString())
+        );
+        server.getPlayerManager().broadcast(Text.of("<%s> o/".formatted(playerName)),false);
     }
 }

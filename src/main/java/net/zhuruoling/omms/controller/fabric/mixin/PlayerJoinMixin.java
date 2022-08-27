@@ -3,13 +3,13 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +24,7 @@ import static net.zhuruoling.omms.controller.fabric.util.Util.getPlayerInWhiteli
 
 @Mixin(value = net.minecraft.server.PlayerManager.class)
 public abstract class PlayerJoinMixin {
-    @Shadow @Final private static Logger LOGGER;
+    Logger LOGGER = LogUtils.getLogger();
 
     @Shadow @Nullable public abstract ServerPlayerEntity getPlayer(String name);
 
