@@ -20,7 +20,7 @@ public class PlayerChatMixin {
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci){
         String raw = packet.getChatMessage();
         if (!raw.startsWith("/")){
-            Util.sendBroadcast(Util.TARGET_CHAT, raw, this.player.getDisplayName().asString());
+            Util.sendBroadcast(Util.TARGET_CHAT, raw, this.player.getName().asString());
         }
     }
 }
