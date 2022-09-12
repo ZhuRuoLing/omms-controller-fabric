@@ -3,7 +3,7 @@
   "id": "omms-controller-fabric",
   "version": "${version}",
   "name": "Omms Controller Fabric",
-  "description": "Fabric side OMMS",
+  "description": "Fabric side OMMS Controller",
   "authors": [
     "ZhuRuoLing"
   ],

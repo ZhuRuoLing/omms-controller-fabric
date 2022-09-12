@@ -105,7 +105,6 @@ public class ConstantStorage {
             hashMap.put(serverMappingNames,mapping);
             setServerMappings(hashMap);
         }
-        System.out.println(serverMappings);
     }
 
     public static boolean isEnable() {

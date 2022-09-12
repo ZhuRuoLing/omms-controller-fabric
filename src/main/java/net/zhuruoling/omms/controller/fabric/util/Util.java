@@ -22,14 +22,14 @@ public class Util {
     public static final Text RIGHT_BRACKET = Text.of("]");
     public static final Text SPACE = Text.of(" ");
 
-    public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4",10086);
-    public static final UdpBroadcastSender.Target TARGET_CONTROL = new UdpBroadcastSender.Target("224.114.51.4",10087);
-    public static String getPlayerInWhitelists(String httpUrl){
+    public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4", 10086);
+    public static final UdpBroadcastSender.Target TARGET_CONTROL = new UdpBroadcastSender.Target("224.114.51.4", 10087);
+
+    public static String getPlayerInWhitelists(String httpUrl) {
         HttpURLConnection connection = null;
         InputStream is = null;
         BufferedReader br = null;
         StringBuilder result = new StringBuilder();
-        result.append("");
         try {
             URL url = new URL(httpUrl);
             connection = (HttpURLConnection) url.openConnection();
@@ -72,13 +72,12 @@ public class Util {
     }
 
 
-    public static Text fromServerString(String displayName, String proxyName, boolean isCurrentServer, boolean isMissingServer){
+    public static Text fromServerString(String displayName, String proxyName, boolean isCurrentServer, boolean isMissingServer) {
         Style style = Style.EMPTY;
-        if (isMissingServer){
+        if (isMissingServer) {
             style = style.withColor(TextColor.fromFormatting(Formatting.RED));
             style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Missing server name mapping key.")));
-        }
-        else {
+        } else {
             if (isCurrentServer) {
                 style = style.withColor(TextColor.fromFormatting(Formatting.YELLOW));
                 style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Current server")));
@@ -90,11 +89,11 @@ public class Util {
         }
         Text name = Text.of(displayName).copyContentOnly().setStyle(style);
         List<Text> texts = List.of(Util.LEFT_BRACKET, name, Util.RIGHT_BRACKET);
-        return Texts.join(texts,Text.empty());
+        return Texts.join(texts, Text.empty());
     }
 
 
-    public static Text fromBroadcast(Broadcast broadcast){
+    public static Text fromBroadcast(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
         List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
@@ -108,7 +107,22 @@ public class Util {
         return Texts.join(texts, Text.of(""));
     }
 
-    public static void sendBroadcast(UdpBroadcastSender.Target target, String text, String playerName) {
+    public static Text fromBroadcastToQQ(Broadcast broadcast) {
+        Style style = Style.EMPTY;
+
+        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
+                Text.of("<").copyContentOnly(),
+                Text.of(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+                LEFT_BRACKET.copyContentOnly(),
+                Text.of(broadcast.getServer() + " -> QQ").copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
+                Text.of("]>").copyContentOnly(),
+                Text.of(broadcast.getContent()).copyContentOnly()
+        );
+        return Texts.join(texts, Text.of(""));
+    }
+
+
+    public static void sendChatBroadcast(String text, String playerName) {
         Broadcast broadcast = new Broadcast(playerName, text);
         Gson gson = new GsonBuilder().serializeNulls().create();
         String data = gson.toJson(broadcast, Broadcast.class);

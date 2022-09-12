@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.net.SocketAddress;
 import java.util.Arrays;
+import java.util.Objects;
 
 import static net.zhuruoling.omms.controller.fabric.util.Util.getPlayerInWhitelists;
 
@@ -30,12 +31,21 @@ public abstract class PlayerJoinMixin {
 
     @Inject(method = "checkCanJoin", at = @At("HEAD"), cancellable = true)
     private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir){
+        if (!ConstantStorage.isEnable())return;
         try {
             String player = profile.getName();
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),player);
             String result = getPlayerInWhitelists(url);
+            if (result.isEmpty()){
+                var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
+                cir.setReturnValue(text);
+            }
             Gson gson = new GsonBuilder().serializeNulls().create();
             String[] whitelists = gson.fromJson(result,String[].class);
+            if (Objects.isNull(whitelists)){
+                var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
+                cir.setReturnValue(text);
+            }
             if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())){
                 LOGGER.info("Successfully authed player %s".formatted(player));
                 cir.setReturnValue(null);
@@ -46,7 +56,7 @@ public abstract class PlayerJoinMixin {
             }
         }
         catch (Exception e){
-            LOGGER.error("Failed to parse whitelist server return value.",e);
+            LOGGER.error("Failed to parse whitelist server return value.");
             var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
             cir.setReturnValue(text);
         }

@@ -18,10 +18,11 @@ public class PlayerChatMixin {
 
     @Inject(at = @At("RETURN"), method = "onChatMessage")
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
+
         String raw = packet.chatMessage();
         //System.out.println(raw);
         if (!raw.startsWith("/")) {
-            Util.sendBroadcast(Util.TARGET_CHAT, raw, this.player.getName().getString());
+            Util.sendChatBroadcast(raw, this.player.getName().getString());
         }
     }
     /*

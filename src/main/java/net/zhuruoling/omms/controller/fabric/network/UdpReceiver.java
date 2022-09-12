@@ -27,8 +27,8 @@ public class UdpReceiver extends Thread{
         try {
             int port = target.port();
             String address = target.address(); // 224.114.51.4:10086
-            MulticastSocket socket = null;
-            InetAddress inetAddress = null;
+            MulticastSocket socket;
+            InetAddress inetAddress;
             inetAddress = InetAddress.getByName(address);
             socket = new MulticastSocket(port);
             logger.info("Started Broadcast Receiver at " + address + ":" + port);

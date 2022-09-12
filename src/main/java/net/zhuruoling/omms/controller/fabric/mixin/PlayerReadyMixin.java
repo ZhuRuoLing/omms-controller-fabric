@@ -29,6 +29,7 @@ public class PlayerReadyMixin {
 
     @Inject(method = "onPlayerConnect",at = @At("RETURN"))
     private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci){
+        if (!ConstantStorage.isEnable())return;
         String playerName = player.getName().copyContentOnly().getString();
         String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),playerName);
         String result = getPlayerInWhitelists(url);
