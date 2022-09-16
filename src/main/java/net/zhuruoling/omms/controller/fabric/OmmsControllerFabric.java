@@ -80,7 +80,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq")
+            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                     .then(
                             RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
                                         var content = StringArgumentType.getString(context, "content");
