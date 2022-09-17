@@ -11,9 +11,11 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.command.argument.NbtCompoundArgumentType;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.message.MessageType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
+import net.minecraft.util.registry.RegistryKey;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import net.zhuruoling.omms.controller.fabric.network.*;
 import net.zhuruoling.omms.controller.fabric.util.Util;
@@ -82,7 +84,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                     .then(
-                            RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
+                            RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
                                         var content = StringArgumentType.getString(context, "content");
                                         var sender = context.getSource().getDisplayName().getString();
                                         Util.sendChatBroadcast(content, "\ufff3\ufff4" + sender);
@@ -98,11 +100,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 var broadcast = new Gson().fromJson(m, Broadcast.class);
                 //logger.info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
                 if (broadcast.getPlayer().startsWith("\ufff3\ufff4")){
-                    server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
+                    server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), MessageType.CHAT));
 
                 }
                 if (!Objects.equals(broadcast.getServer(), ConstantStorage.getControllerName())) {
-                    server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
+                    server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), MessageType.CHAT));
                 }
             });
             var instructionReceiver = new UdpReceiver(server, Util.TARGET_CONTROL, (s, m) -> {
@@ -114,7 +116,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                         server.execute(() -> {
                             var dispatcher = server.getCommandManager().getDispatcher();
                             var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
-                            server.getCommandManager().execute(results, instruction.getCommandString());
+                            server.getCommandManager().execute(server.getCommandSource(), instruction.getCommandString());
                         });
 
                     }

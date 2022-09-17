@@ -19,7 +19,7 @@ public class PlayerChatMixin {
     @Inject(at = @At("RETURN"), method = "onChatMessage")
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
 
-        String raw = packet.chatMessage();
+        String raw = packet.getChatMessage();
         //System.out.println(raw);
         if (!raw.startsWith("/")) {
             Util.sendChatBroadcast(raw, this.player.getName().getString());

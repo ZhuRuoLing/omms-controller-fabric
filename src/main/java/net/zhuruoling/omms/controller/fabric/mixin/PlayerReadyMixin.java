@@ -1,6 +1,7 @@
 package net.zhuruoling.omms.controller.fabric.mixin;
 
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.message.MessageType;
@@ -35,15 +36,15 @@ public class PlayerReadyMixin {
         String result = getPlayerInWhitelists(url);
         NbtCompound compound = new NbtCompound();
         compound.putString("servers", result);
-        var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();
+        var dispatcher = server.getCommandManager().getDispatcher();
 
-        Objects.requireNonNull(player.getServer()).getCommandManager().execute(
-                dispatcher.parse(
-                        "menu %s".formatted(compound.asString())
-                        , player.getCommandSource()
-                )
-                ,"menu %s".formatted(compound.asString())
-        );
-        server.getPlayerManager().broadcast(Text.of("<%s> o/".formatted(playerName)),false);
+        try {
+            //System.out.printf("menu %s%n", compound.asString());
+            dispatcher.execute("menu %s".formatted(compound.asString()), player.getCommandSource());
+        } catch (CommandSyntaxException e) {
+            e.printStackTrace();
+        }
+
+        server.getPlayerManager().broadcast(Text.of("<%s> o/".formatted(playerName)),MessageType.CHAT);
     }
 }
