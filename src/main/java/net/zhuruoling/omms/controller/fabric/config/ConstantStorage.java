@@ -9,10 +9,12 @@ public class ConstantStorage {
     private static boolean enable = false;
     private static String httpQueryAddress;
     private static int httpQueryPort;
+    private static int rmiPort;
     private static String controllerName;
     private static String whitelistName;
-    private static String unixSocketFilePath;
     private static String chatChannel;
+
+    private static int password;
     private static HashMap<String,ServerMapping> serverMappings;
 
     private static UdpBroadcastSender sender;
@@ -52,6 +54,8 @@ public class ConstantStorage {
                 httpQueryPort=50001
                 controllerName=omms-controller
                 usesWhitelist=my_whitelist
+                password=0
+                rmiPort=50010
                 unixSocketFilePath
                 channel=GLOBAL
                 serverMappings""";
@@ -64,8 +68,9 @@ public class ConstantStorage {
         setHttpQueryAddress(config.getOrDefault("httpQueryAddr", "localhost"));
         setHttpQueryPort(config.getOrDefault("httpQueryPort", 50001));
         setWhitelistName(config.getOrDefault("usesWhitelist","my_whitelist"));
+        setPassword(config.getOrDefault("password", 0));
+        setRmiPort(config.getOrDefault("rmiPort", 50010));
         String serverMappingNames = config.getOrDefault("serverMappings","");
-        setUnixSocketFilePath(config.getOrDefault("unixSocketFilePath", ""));
         if (serverMappingNames.contains(",")){
             if (serverMappingNames.isBlank()){
                 setServerMappings(null);
@@ -147,13 +152,7 @@ public class ConstantStorage {
         ConstantStorage.whitelistName = whitelistName;
     }
 
-    public static String getUnixSocketFilePath() {
-        return unixSocketFilePath;
-    }
 
-    public static void setUnixSocketFilePath(String unixSocketFilePath) {
-        ConstantStorage.unixSocketFilePath = unixSocketFilePath;
-    }
 
     public static String getChatChannel() {
         return chatChannel;
@@ -161,6 +160,14 @@ public class ConstantStorage {
 
     public static void setChatChannel(String chatChannel) {
         ConstantStorage.chatChannel = chatChannel;
+    }
+
+    public static int getRmiPort() {
+        return rmiPort;
+    }
+
+    public static void setRmiPort(int rmiPort) {
+        ConstantStorage.rmiPort = rmiPort;
     }
 
     public static HashMap<String, ServerMapping> getServerMappings() {
@@ -210,5 +217,12 @@ public class ConstantStorage {
         }
     }
 
+    public static int getPassword() {
+        return password;
+    }
 
-}
+    public static void setPassword(int password) {
+        ConstantStorage.password = password;
+    }
+
+   }

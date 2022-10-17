@@ -3,13 +3,11 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.message.MessageType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
-import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
 
-import static net.zhuruoling.omms.controller.fabric.util.Util.getPlayerInWhitelists;
+import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
 
 @Mixin(PlayerManager.class)
@@ -32,7 +30,7 @@ public class PlayerReadyMixin {
         if (!ConstantStorage.isEnable())return;
         String playerName = player.getName().copyContentOnly().getString();
         String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),playerName);
-        String result = getPlayerInWhitelists(url);
+        String result = invokeHttpGetRequest(url);
         NbtCompound compound = new NbtCompound();
         compound.putString("servers", result);
         var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();

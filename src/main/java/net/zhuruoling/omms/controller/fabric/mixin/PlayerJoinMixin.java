@@ -20,42 +20,42 @@ import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static net.zhuruoling.omms.controller.fabric.util.Util.getPlayerInWhitelists;
+import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
 
 @Mixin(value = net.minecraft.server.PlayerManager.class)
 public abstract class PlayerJoinMixin {
     Logger LOGGER = LogUtils.getLogger();
 
-    @Shadow @Nullable public abstract ServerPlayerEntity getPlayer(String name);
+    @Shadow
+    @Nullable
+    public abstract ServerPlayerEntity getPlayer(String name);
 
     @Inject(method = "checkCanJoin", at = @At("HEAD"), cancellable = true)
-    private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir){
-        if (!ConstantStorage.isEnable())return;
+    private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir) {
+        if (!ConstantStorage.isEnable()) return;
         try {
             String player = profile.getName();
-            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),player);
-            String result = getPlayerInWhitelists(url);
-            if (result.isEmpty()){
+            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), player);
+            String result = invokeHttpGetRequest(url);
+            if (result.isEmpty()) {
                 var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                 cir.setReturnValue(text);
             }
             Gson gson = new GsonBuilder().serializeNulls().create();
-            String[] whitelists = gson.fromJson(result,String[].class);
-            if (Objects.isNull(whitelists)){
+            String[] whitelists = gson.fromJson(result, String[].class);
+            if (Objects.isNull(whitelists)) {
                 var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                 cir.setReturnValue(text);
             }
-            if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())){
+            if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())) {
                 LOGGER.info("Successfully authed player %s".formatted(player));
-                cir.setReturnValue(null);
-            }
-            else {
+                return;
+            } else {
                 LOGGER.info("Cannot auth player %s".formatted(player));
                 cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
             }
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             LOGGER.error("Failed to parse whitelist server return value.");
             var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
             cir.setReturnValue(text);
