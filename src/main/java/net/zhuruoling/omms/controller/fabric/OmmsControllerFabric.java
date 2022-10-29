@@ -13,9 +13,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.command.argument.NbtCompoundArgumentType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
@@ -24,9 +22,7 @@ import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Objects;
+import java.util.*;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.minecraft.server.command.CommandManager.argument;
@@ -65,7 +61,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                         context.getSource().sendFeedback(Text.of("----------Welcome to %s server!----------".formatted(ConstantStorage.getControllerName())), false);
                         context.getSource().sendFeedback(Text.of("    "), false);
                         context.getSource().sendFeedback(serverText, false);
-                        context.getSource().sendFeedback(Text.of("Type /announcement to fetch latest announcement."), false);
+                        context.getSource().sendFeedback(Text.of("Type \"/announcement latest\" to fetch latest announcement."), false);
                         return 1;
 
                     } catch (Exception e) {
@@ -107,7 +103,61 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                             })
                             )
                     )
+                    .then(LiteralArgumentBuilder.<ServerCommandSource>literal("list")
+                            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
+                                String url = "http://%s:%d/announcement/list".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
+                                String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
+                                try {
+                                    String[] list = new Gson().fromJson(result, String[].class);
+                                    ArrayList<Text> texts = new ArrayList<>();
+                                    for (String s : list) {
+                                        System.out.println(s);
+                                        var text=Texts.join(
+                                                                List.of(
+                                                                        Text.of("["),
+                                                                        Text.of(s)
+                                                                                .copyContentOnly()
+                                                                                .setStyle(
+                                                                                        Style.EMPTY
+                                                                                                .withColor(Formatting.GREEN)
+                                                                                ),
+                                                                        Text.of("]")
+                                                                ),
+                                                                Text.of("")
+                                                        )
+                                                        .copyContentOnly()
+                                                        .setStyle(
+                                                                Style.EMPTY
+                                                                        .withHoverEvent(
+                                                                                new HoverEvent(
+                                                                                        HoverEvent.Action.SHOW_TEXT,
+                                                                                        Text.of("Click to get announcement.")
+                                                                                )
+                                                                        )
+                                                                        .withClickEvent(
+                                                                                new ClickEvent(
+                                                                                        ClickEvent.Action.RUN_COMMAND,
+                                                                                        "/announcement get %s".formatted(s)
+                                                                                )
+                                                                        )
+                                                        )
+                                        ;
+                                        System.out.println(text);
 
+                                    }
+                                    System.out.println(texts);
+                                    context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
+                                    context.getSource().sendFeedback(Text.of(""), false);
+                                    context.getSource().sendFeedback(Texts.join(texts, Text.of(" ")), false);
+                                    context.getSource().sendFeedback(Text.of(""), false);
+                                    return 0;
+                                }
+                                catch(Exception e){
+                                    e.printStackTrace();
+                                }
+                                return 0;
+                            })
+                    )
             );
         }));
 
