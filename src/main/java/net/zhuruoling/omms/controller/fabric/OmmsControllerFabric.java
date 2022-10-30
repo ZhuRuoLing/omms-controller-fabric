@@ -92,7 +92,9 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                 return getAnnouncementToPlayerFromUrl(context, url);
                             })
                     )
+                    .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                     .then(LiteralArgumentBuilder.<ServerCommandSource>literal("get")
+                            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                             .then(
                                     RequiredArgumentBuilder.<ServerCommandSource, String>argument("name", word())
                                             .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
@@ -112,36 +114,35 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                     ArrayList<Text> texts = new ArrayList<>();
                                     for (String s : list) {
                                         System.out.println(s);
-                                        var text=Texts.join(
-                                                                List.of(
-                                                                        Text.of("["),
-                                                                        Text.of(s)
-                                                                                .copyContentOnly()
-                                                                                .setStyle(
-                                                                                        Style.EMPTY
-                                                                                                .withColor(Formatting.GREEN)
-                                                                                ),
-                                                                        Text.of("]")
-                                                                ),
-                                                                Text.of("")
-                                                        )
-                                                        .copyContentOnly()
-                                                        .setStyle(
-                                                                Style.EMPTY
-                                                                        .withHoverEvent(
-                                                                                new HoverEvent(
-                                                                                        HoverEvent.Action.SHOW_TEXT,
-                                                                                        Text.of("Click to get announcement.")
-                                                                                )
+                                        var text = Texts.join(
+                                                        List.of(
+                                                                Text.of("["),
+                                                                Text.of(s)
+                                                                        .copyContentOnly()
+                                                                        .setStyle(
+                                                                                Style.EMPTY
+                                                                                        .withColor(Formatting.GREEN)
+                                                                        ),
+                                                                Text.of("]")
+                                                        ),
+                                                        Text.of("")
+                                                )
+                                                .copyContentOnly()
+                                                .setStyle(
+                                                        Style.EMPTY
+                                                                .withHoverEvent(
+                                                                        new HoverEvent(
+                                                                                HoverEvent.Action.SHOW_TEXT,
+                                                                                Text.of("Click to get announcement.")
                                                                         )
-                                                                        .withClickEvent(
-                                                                                new ClickEvent(
-                                                                                        ClickEvent.Action.RUN_COMMAND,
-                                                                                        "/announcement get %s".formatted(s)
-                                                                                )
+                                                                )
+                                                                .withClickEvent(
+                                                                        new ClickEvent(
+                                                                                ClickEvent.Action.RUN_COMMAND,
+                                                                                "/announcement get %s".formatted(s)
                                                                         )
-                                                        )
-                                        ;
+                                                                )
+                                                );
                                         System.out.println(text);
 
                                     }
@@ -151,8 +152,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                     context.getSource().sendFeedback(Texts.join(texts, Text.of(" ")), false);
                                     context.getSource().sendFeedback(Text.of(""), false);
                                     return 0;
-                                }
-                                catch(Exception e){
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                                 return 0;
@@ -161,19 +161,18 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             );
         }));
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
-                    .then(
-                            RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
-                                        var content = StringArgumentType.getString(context, "content");
-                                        var sender = context.getSource().getDisplayName().getString();
-                                        Util.sendChatBroadcast(content, "\ufff3\ufff4" + sender);
-                                        return 0;
-                                    }
-                            )
-                    )
-            );
-        });
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq")
+                .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
+                .then(
+                        RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
+                                    var content = StringArgumentType.getString(context, "content");
+                                    var sender = context.getSource().getDisplayName().getString();
+                                    Util.sendChatBroadcast(content, "\ufff3\ufff4" + sender);
+                                    return 0;
+                                }
+                        )
+                )
+        ));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
@@ -188,17 +187,27 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 }
             });
             var instructionReceiver = new UdpReceiver(server, Util.TARGET_CONTROL, (s, m) -> {
+
                 Gson gson = new GsonBuilder().serializeNulls().create();
                 Instruction instruction = gson.fromJson(m, Instruction.class);
-                if (instruction.getControllerType() == ControllerTypes.FABRIC) {
-                    if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
-                        logger.info("Received Command: %s".formatted(instruction.getCommandString()));
-                        server.execute(() -> {
-                            var dispatcher = server.getCommandManager().getDispatcher();
-                            var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
-                            server.getCommandManager().execute(results, instruction.getCommandString());
-                        });
 
+                if (instruction.getControllerType() == ControllerTypes.FABRIC) {
+                    if (instruction.getType() == InstructionType.UPLOAD_STATUS) {
+                        logger.info("Sending status.");
+                        UdpBroadcastSender.Target target = gson.fromJson(instruction.getCommandString(), UdpBroadcastSender.Target.class);
+                        Util.sendStatus(s,target);
+                    } else {
+                        if (instruction.getType() == InstructionType.RUN_COMMAND) {
+                            if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
+                                logger.info("Received Command: %s".formatted(instruction.getCommandString()));
+                                server.execute(() -> {
+                                    var dispatcher = server.getCommandManager().getDispatcher();
+                                    var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
+                                    server.getCommandManager().execute(results, instruction.getCommandString());
+                                });
+
+                            }
+                        }
                     }
                 }
             });

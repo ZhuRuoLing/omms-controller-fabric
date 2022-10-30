@@ -56,7 +56,7 @@ public class UdpBroadcastSender extends Thread {
 
 
     private void send(Target target, byte[] content) {
-        queue.remove(target,content);
+        queue.remove(target, content);
         MulticastSocket socket;
 
         try {
@@ -64,7 +64,7 @@ public class UdpBroadcastSender extends Thread {
                 socket = multicastSocketCache.get(target);
             } else {
                 socket = createMulticastSocket(target.address, target.port);
-                multicastSocketCache.put(target,socket);
+                multicastSocketCache.put(target, socket);
             }
             DatagramPacket packet = new DatagramPacket(content, content.length, new InetSocketAddress(target.address, target.port).getAddress(), target.port);
 
@@ -76,7 +76,23 @@ public class UdpBroadcastSender extends Thread {
         }
     }
 
-    public record Target(String address, int port) {
+    public void createMulticastSocketCache(Target target) {
+        try {
+            multicastSocketCache.put(target, createMulticastSocket(target.address, target.port));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static class Target {
+
+        String address;
+        int port;
+
+        public Target(String s, int i) {
+            this.address = s;
+            this.port = i;
+        }
 
         @Override
         public int hashCode() {
@@ -89,6 +105,14 @@ public class UdpBroadcastSender extends Thread {
                     "address='" + address + '\'' +
                     ", port=" + port +
                     '}';
+        }
+
+        public String address() {
+            return address;
+        }
+
+        public int port() {
+            return port;
         }
     }
 

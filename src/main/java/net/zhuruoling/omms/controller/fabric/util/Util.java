@@ -2,11 +2,15 @@ package net.zhuruoling.omms.controller.fabric.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.client.realms.util.JsonUtils;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import net.zhuruoling.omms.controller.fabric.network.Broadcast;
+import net.zhuruoling.omms.controller.fabric.network.ControllerTypes;
+import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 
 import java.io.BufferedReader;
@@ -19,10 +23,7 @@ import java.text.SimpleDateFormat;
 import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.FormatStyle;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 public class Util {
     public static final Text LEFT_BRACKET = Text.of("[");
@@ -31,6 +32,8 @@ public class Util {
 
     public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4", 10086);
     public static final UdpBroadcastSender.Target TARGET_CONTROL = new UdpBroadcastSender.Target("224.114.51.4", 10087);
+
+    public static final Gson gson = new GsonBuilder().serializeNulls().create();
 
     public static String invokeHttpGetRequest(String httpUrl) {
         HttpURLConnection connection = null;
@@ -190,5 +193,23 @@ public class Util {
         Gson gson = new GsonBuilder().serializeNulls().create();
         String data = gson.toJson(broadcast, Broadcast.class);
         ConstantStorage.getSender().addToQueue(Util.TARGET_CHAT, data);
+    }
+
+    public static void sendStatus(MinecraftServer server, UdpBroadcastSender.Target target){
+        var status = new Status(
+                ConstantStorage.getControllerName(),
+                ControllerTypes.FABRIC,
+                server.getCurrentPlayerCount(),
+                server.getMaxPlayerCount(),
+                Arrays.asList(server.getPlayerNames())
+        );
+        ConstantStorage.getSender().createMulticastSocketCache(target);
+        try {
+            Thread.sleep(50);
+            ConstantStorage.getSender().addToQueue(target,gson.toJson(status));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }
