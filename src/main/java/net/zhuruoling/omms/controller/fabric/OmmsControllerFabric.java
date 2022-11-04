@@ -36,6 +36,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     public void onInitializeServer() {
         ConstantStorage.init();
         if (!ConstantStorage.isEnable()) return;
+
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("menu")
                 .then(argument("data", NbtCompoundArgumentType.nbtCompound()).requires(source -> source.hasPermissionLevel(0)).executes(context -> {
                     try {
@@ -83,83 +84,81 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             );
         });
 
-        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("announcement")
-                    .then(LiteralArgumentBuilder.<ServerCommandSource>literal("latest")
-                            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
-                            .executes(context -> {
-                                String url = "http://%s:%d/announcement/latest".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
-                                return getAnnouncementToPlayerFromUrl(context, url);
-                            })
-                    )
-                    .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
-                    .then(LiteralArgumentBuilder.<ServerCommandSource>literal("get")
-                            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
-                            .then(
-                                    RequiredArgumentBuilder.<ServerCommandSource, String>argument("name", word())
-                                            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
-                                            .executes(context -> {
-                                                String name = StringArgumentType.getString(context, "name");
-                                                String url = "http://%s:%d/announcement/get/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), name);
-                                                return getAnnouncementToPlayerFromUrl(context, url);
-                                            })
-                            )
-                    )
-                    .then(LiteralArgumentBuilder.<ServerCommandSource>literal("list")
-                            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
-                                String url = "http://%s:%d/announcement/list".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
-                                String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
-                                try {
-                                    String[] list = new Gson().fromJson(result, String[].class);
-                                    ArrayList<Text> texts = new ArrayList<>();
-                                    for (String s : list) {
-                                        System.out.println(s);
-                                        var text = Texts.join(
-                                                        List.of(
-                                                                Text.of("["),
-                                                                Text.of(s)
-                                                                        .copyContentOnly()
-                                                                        .setStyle(
-                                                                                Style.EMPTY
-                                                                                        .withColor(Formatting.GREEN)
-                                                                        ),
-                                                                Text.of("]")
-                                                        ),
-                                                        Text.of("")
-                                                )
-                                                .copyContentOnly()
-                                                .setStyle(
-                                                        Style.EMPTY
-                                                                .withHoverEvent(
-                                                                        new HoverEvent(
-                                                                                HoverEvent.Action.SHOW_TEXT,
-                                                                                Text.of("Click to get announcement.")
-                                                                        )
-                                                                )
-                                                                .withClickEvent(
-                                                                        new ClickEvent(
-                                                                                ClickEvent.Action.RUN_COMMAND,
-                                                                                "/announcement get %s".formatted(s)
-                                                                        )
-                                                                )
-                                                );
-                                        System.out.println(text);
+        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("announcement")
+                .then(LiteralArgumentBuilder.<ServerCommandSource>literal("latest")
+                        .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
+                        .executes(context -> {
+                            String url = "http://%s:%d/announcement/latest".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
+                            return getAnnouncementToPlayerFromUrl(context, url);
+                        })
+                )
+                .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
+                .then(LiteralArgumentBuilder.<ServerCommandSource>literal("get")
+                        .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
+                        .then(
+                                RequiredArgumentBuilder.<ServerCommandSource, String>argument("name", word())
+                                        .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
+                                        .executes(context -> {
+                                            String name = StringArgumentType.getString(context, "name");
+                                            String url = "http://%s:%d/announcement/get/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), name);
+                                            return getAnnouncementToPlayerFromUrl(context, url);
+                                        })
+                        )
+                )
+                .then(LiteralArgumentBuilder.<ServerCommandSource>literal("list")
+                        .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
+                            String url = "http://%s:%d/announcement/list".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
+                            String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
+                            try {
+                                String[] list = new Gson().fromJson(result, String[].class);
+                                ArrayList<Text> texts = new ArrayList<>();
+                                for (String s : list) {
+                                    System.out.println(s);
+                                    var text = Texts.join(
+                                                    List.of(
+                                                            Text.of("["),
+                                                            Text.of(s)
+                                                                    .copyContentOnly()
+                                                                    .setStyle(
+                                                                            Style.EMPTY
+                                                                                    .withColor(Formatting.GREEN)
+                                                                    ),
+                                                            Text.of("]")
+                                                    ),
+                                                    Text.of("")
+                                            )
+                                            .copyContentOnly()
+                                            .setStyle(
+                                                    Style.EMPTY
+                                                            .withHoverEvent(
+                                                                    new HoverEvent(
+                                                                            HoverEvent.Action.SHOW_TEXT,
+                                                                            Text.of("Click to get announcement.")
+                                                                    )
+                                                            )
+                                                            .withClickEvent(
+                                                                    new ClickEvent(
+                                                                            ClickEvent.Action.RUN_COMMAND,
+                                                                            "/announcement get %s".formatted(s)
+                                                                    )
+                                                            )
+                                            );
+                                    System.out.println(text);
 
-                                    }
-                                    System.out.println(texts);
-                                    context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
-                                    context.getSource().sendFeedback(Text.of(""), false);
-                                    context.getSource().sendFeedback(Texts.join(texts, Text.of(" ")), false);
-                                    context.getSource().sendFeedback(Text.of(""), false);
-                                    return 0;
-                                } catch (Exception e) {
-                                    e.printStackTrace();
                                 }
+                                System.out.println(texts);
+                                context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
+                                context.getSource().sendFeedback(Text.of(""), false);
+                                context.getSource().sendFeedback(Texts.join(texts, Text.of(" ")), false);
+                                context.getSource().sendFeedback(Text.of(""), false);
                                 return 0;
-                            })
-                    )
-            );
-        }));
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return 0;
+                        })
+                )
+        )));
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq")
                 .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
@@ -175,6 +174,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         ));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+
             var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
                 var broadcast = new Gson().fromJson(m, Broadcast.class);
                 //logger.info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
@@ -186,6 +186,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
                 }
             });
+
             var instructionReceiver = new UdpReceiver(server, Util.TARGET_CONTROL, (s, m) -> {
 
                 Gson gson = new GsonBuilder().serializeNulls().create();
@@ -213,6 +214,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             });
 
             var sender = new UdpBroadcastSender();
+
             chatReceiver.setDaemon(true);
             sender.setDaemon(true);
             instructionReceiver.setDaemon(true);
@@ -224,6 +226,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             ConstantStorage.setSender(sender);
             ConstantStorage.setChatReceiver(chatReceiver);
             ConstantStorage.setInstructionReceiver(instructionReceiver);
+
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             ConstantStorage.getSender().setStopped(true);

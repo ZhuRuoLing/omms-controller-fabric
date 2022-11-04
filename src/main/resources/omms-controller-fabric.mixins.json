@@ -3,10 +3,6 @@
   "minVersion": "0.8",
   "package": "net.zhuruoling.omms.controller.fabric.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [
-  ],
-  "client": [
-  ],
   "server": [
     "PlayerReadyMixin",
     "PlayerJoinMixin",

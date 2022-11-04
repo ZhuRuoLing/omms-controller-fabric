@@ -9,13 +9,10 @@ public class ConstantStorage {
     private static boolean enable = false;
     private static String httpQueryAddress;
     private static int httpQueryPort;
-    private static int rmiPort;
     private static String controllerName;
     private static String whitelistName;
     private static String chatChannel;
-
-    private static int password;
-    private static HashMap<String,ServerMapping> serverMappings;
+    private static HashMap<String, ServerMapping> serverMappings;
 
     private static UdpBroadcastSender sender;
 
@@ -34,6 +31,10 @@ public class ConstantStorage {
         return sender;
     }
 
+    public static void setSender(UdpBroadcastSender sender) {
+        ConstantStorage.sender = sender;
+    }
+
     public static UdpReceiver getChatReceiver() {
         return chatReceiver;
     }
@@ -42,11 +43,7 @@ public class ConstantStorage {
         ConstantStorage.chatReceiver = receiver;
     }
 
-    public static void setSender(UdpBroadcastSender sender) {
-        ConstantStorage.sender = sender;
-    }
-
-    private static String provider(String filename ) {
+    private static String provider(String filename) {
         return """
                 #OMMS config
                 enable=false
@@ -54,60 +51,55 @@ public class ConstantStorage {
                 httpQueryPort=50001
                 controllerName=omms-controller
                 usesWhitelist=my_whitelist
-                password=0
-                rmiPort=50010
-                unixSocketFilePath
                 channel=GLOBAL
                 serverMappings""";
     }
-    public static void init(){
+
+    public static void init() {
         SimpleConfig config = SimpleConfig.of("omms").provider(ConstantStorage::provider).request();
-        setEnable(config.getOrDefault("enable",false));
-        setChatChannel(config.getOrDefault("channel","GLOBAL"));
+        setEnable(config.getOrDefault("enable", false));
+        setChatChannel(config.getOrDefault("channel", "GLOBAL"));
         setControllerName(config.getOrDefault("controllerName", "omms-controller"));
         setHttpQueryAddress(config.getOrDefault("httpQueryAddr", "localhost"));
         setHttpQueryPort(config.getOrDefault("httpQueryPort", 50001));
-        setWhitelistName(config.getOrDefault("usesWhitelist","my_whitelist"));
-        setPassword(config.getOrDefault("password", 0));
-        setRmiPort(config.getOrDefault("rmiPort", 50010));
-        String serverMappingNames = config.getOrDefault("serverMappings","");
-        if (serverMappingNames.contains(",")){
-            if (serverMappingNames.isBlank()){
+        setWhitelistName(config.getOrDefault("usesWhitelist", "my_whitelist"));
+        String serverMappingNames = config.getOrDefault("serverMappings", "");
+        if (serverMappingNames.contains(",")) {
+            if (serverMappingNames.isBlank()) {
                 setServerMappings(null);
                 return;
             }
-            HashMap<String,ServerMapping> map = new HashMap<>();
+            HashMap<String, ServerMapping> map = new HashMap<>();
             for (String name : serverMappingNames.split(",")) {
-                if (name.isBlank()){
+                if (name.isBlank()) {
                     continue;
                 }
                 ServerMapping mapping = new ServerMapping();
                 mapping.setWhitelistName(serverMappingNames);
-                String displayName = config.getOrDefault("serverMapping.%s.displayName".formatted(name),"");
-                String proxyName = config.getOrDefault("serverMapping.%s.proxyName".formatted(name),"");
-                if (displayName.isBlank() || proxyName.isBlank()){
+                String displayName = config.getOrDefault("serverMapping.%s.displayName".formatted(name), "");
+                String proxyName = config.getOrDefault("serverMapping.%s.proxyName".formatted(name), "");
+                if (displayName.isBlank() || proxyName.isBlank()) {
                     setServerMappings(null);
                     continue;
                 }
                 mapping.setDisplayName(displayName);
                 mapping.setProxyName(proxyName);
-                map.put(name,mapping);
+                map.put(name, mapping);
             }
             setServerMappings(map);
-        }
-        else {
+        } else {
             ServerMapping mapping = new ServerMapping();
             mapping.setWhitelistName(serverMappingNames);
-            String displayName = config.getOrDefault("serverMapping.%s.displayName".formatted(serverMappingNames),"");
-            String proxyName = config.getOrDefault("serverMapping.%s.proxyName".formatted(serverMappingNames),"");
-            if (displayName.isBlank() || proxyName.isBlank()){
+            String displayName = config.getOrDefault("serverMapping.%s.displayName".formatted(serverMappingNames), "");
+            String proxyName = config.getOrDefault("serverMapping.%s.proxyName".formatted(serverMappingNames), "");
+            if (displayName.isBlank() || proxyName.isBlank()) {
                 setServerMappings(null);
                 return;
             }
             mapping.setDisplayName(displayName);
             mapping.setProxyName(proxyName);
-            HashMap<String,ServerMapping> hashMap = new HashMap<>();
-            hashMap.put(serverMappingNames,mapping);
+            HashMap<String, ServerMapping> hashMap = new HashMap<>();
+            hashMap.put(serverMappingNames, mapping);
             setServerMappings(hashMap);
         }
     }
@@ -153,21 +145,12 @@ public class ConstantStorage {
     }
 
 
-
     public static String getChatChannel() {
         return chatChannel;
     }
 
     public static void setChatChannel(String chatChannel) {
         ConstantStorage.chatChannel = chatChannel;
-    }
-
-    public static int getRmiPort() {
-        return rmiPort;
-    }
-
-    public static void setRmiPort(int rmiPort) {
-        ConstantStorage.rmiPort = rmiPort;
     }
 
     public static HashMap<String, ServerMapping> getServerMappings() {
@@ -178,7 +161,8 @@ public class ConstantStorage {
         ConstantStorage.serverMappings = serverMappings;
     }
 
-    public static class ServerMapping{
+
+    public static class ServerMapping {
         private String displayName;
         private String proxyName;
         private String whitelistName;
@@ -217,12 +201,4 @@ public class ConstantStorage {
         }
     }
 
-    public static int getPassword() {
-        return password;
-    }
-
-    public static void setPassword(int password) {
-        ConstantStorage.password = password;
-    }
-
-   }
+}
