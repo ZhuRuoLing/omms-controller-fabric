@@ -1,18 +1,30 @@
 package net.zhuruoling.omms.controller.fabric.network;
 
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
+import net.zhuruoling.omms.controller.fabric.util.Util;
 
 public class Broadcast {
     String channel;
     String server;
     String player;
     String content;
+    public String id;
 
     public Broadcast(String player, String content) {
         this.server = ConstantStorage.getControllerName();
         this.channel = ConstantStorage.getChatChannel();
         this.player = player;
         this.content = content;
+        this.id = Util.randomStringGen(16);
+    }
+
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getChannel() {

@@ -195,6 +195,17 @@ public class Util {
         ConstantStorage.getSender().addToQueue(Util.TARGET_CHAT, data);
     }
 
+
+    public static String randomStringGen(int len) {
+        String ch = "abcdefghijklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder stringBuffer = new StringBuilder();
+        for (int i = 0; i < len; i++) {
+            Random random = new Random(System.nanoTime());
+            int num = random.nextInt(62);
+            stringBuffer.append(ch.charAt(num));
+        }
+        return stringBuffer.toString();
+    }
     public static void sendStatus(MinecraftServer server, UdpBroadcastSender.Target target){
         var status = new Status(
                 ConstantStorage.getControllerName(),

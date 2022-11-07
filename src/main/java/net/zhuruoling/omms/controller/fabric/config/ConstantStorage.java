@@ -8,16 +8,23 @@ import java.util.HashMap;
 public class ConstantStorage {
     private static boolean enable = false;
     private static String httpQueryAddress;
+    private static String oldId;
     private static int httpQueryPort;
     private static String controllerName;
     private static String whitelistName;
     private static String chatChannel;
     private static HashMap<String, ServerMapping> serverMappings;
-
     private static UdpBroadcastSender sender;
-
     private static UdpReceiver chatReceiver;
     private static UdpReceiver instructionReceiver;
+
+    public static String getOldId() {
+        return oldId;
+    }
+
+    public static void setOldId(String oldId) {
+        ConstantStorage.oldId = oldId;
+    }
 
     public static UdpReceiver getInstructionReceiver() {
         return instructionReceiver;

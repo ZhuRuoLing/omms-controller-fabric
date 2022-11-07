@@ -174,13 +174,13 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         ));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-
             var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
                 var broadcast = new Gson().fromJson(m, Broadcast.class);
+                if (Objects.equals(broadcast.getId(), ConstantStorage.getOldId())) return;
                 //logger.info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
                 if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
                     server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
-
+                    return;
                 }
                 if (!Objects.equals(broadcast.getServer(), ConstantStorage.getControllerName())) {
                     server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
@@ -196,7 +196,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     if (instruction.getType() == InstructionType.UPLOAD_STATUS) {
                         logger.info("Sending status.");
                         UdpBroadcastSender.Target target = gson.fromJson(instruction.getCommandString(), UdpBroadcastSender.Target.class);
-                        Util.sendStatus(s,target);
+                        Util.sendStatus(s, target);
                     } else {
                         if (instruction.getType() == InstructionType.RUN_COMMAND) {
                             if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
