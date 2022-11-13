@@ -2,6 +2,8 @@ package net.zhuruoling.omms.controller.fabric;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -10,8 +12,8 @@ import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.command.argument.NbtCompoundArgumentType;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.command.argument.NbtCompoundTagArgumentType;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -38,9 +40,9 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         if (!ConstantStorage.isEnable()) return;
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("menu")
-                .then(argument("data", NbtCompoundArgumentType.nbtCompound()).requires(source -> source.hasPermissionLevel(0)).executes(context -> {
+                .then(argument("data", NbtCompoundTagArgumentType.nbtCompound()).requires(source -> source.hasPermissionLevel(0)).executes(context -> {
                     try {
-                        NbtCompound compound = NbtCompoundArgumentType.getNbtCompound(context, "data");
+                        CompoundTag compound = NbtCompoundTagArgumentType.getCompoundTag(context, "data");
                         if (!compound.contains("servers")) {
                             context.getSource().sendError(Text.of("Wrong server data."));
                             return -1;
@@ -118,7 +120,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                                     List.of(
                                                             Text.of("["),
                                                             Text.of(s)
-                                                                    .copyContentOnly()
+                                                                    .copy()
                                                                     .setStyle(
                                                                             Style.EMPTY
                                                                                     .withColor(Formatting.GREEN)
@@ -127,7 +129,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                                     ),
                                                     Text.of("")
                                             )
-                                            .copyContentOnly()
+                                            .copy()
                                             .setStyle(
                                                     Style.EMPTY
                                                             .withHoverEvent(
@@ -246,7 +248,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         String result = Util.invokeHttpGetRequest(url);
         if (result != null) {
             if (result.equals("NO_ANNOUNCEMENT")) {
-                Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+                Text text = Texts.join(Text.of("No announcement.").copy().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
                 context.getSource().sendFeedback(text, false);
                 return 0;
             }
@@ -260,7 +262,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 e.printStackTrace();
             }
         } else {
-            Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+            Text text = Texts.join(Text.of("No announcement.").copy().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
             context.getSource().sendFeedback(text, false);
             return 0;
         }

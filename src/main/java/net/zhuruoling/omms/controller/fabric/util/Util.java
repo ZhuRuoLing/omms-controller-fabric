@@ -134,7 +134,7 @@ public class Util {
                 style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Goto server %s".formatted(displayName))));
             }
         }
-        Text name = Text.of(displayName).copyContentOnly().setStyle(style);
+        Text name = Text.of(displayName).copy().setStyle(style);
         List<Text> texts = List.of(Util.LEFT_BRACKET, name, Util.RIGHT_BRACKET);
         return Texts.join(texts, Text.empty());
     }
@@ -144,14 +144,14 @@ public class Util {
         String pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.FULL, FormatStyle.FULL, Chronology.ofLocale(Locale.getDefault()), Locale.getDefault());
         SimpleDateFormat format = new SimpleDateFormat(pattern);
         Text timeText = Text.of("Published at %s\n".formatted(format.format(new Date(announcement.getTimeMillis()))))
-                .copyContentOnly().setStyle(style.withColor(TextColor.fromFormatting(Formatting.LIGHT_PURPLE)).withBold(true));
+                .copy().setStyle(style.withColor(TextColor.fromFormatting(Formatting.LIGHT_PURPLE)).withBold(true));
         StringBuilder builder = new StringBuilder();
         for (String s : announcement.getContent()) {
             builder.append(s);
             builder.append("\n");
         }
-        Text contentText = Text.of(builder.toString()).copyContentOnly();
-        Text titleText = Text.of(announcement.getTitle() + "\n").copyContentOnly().setStyle(style.withColor(Formatting.GREEN).withBold(true));
+        Text contentText = Text.of(builder.toString()).copy();
+        Text titleText = Text.of(announcement.getTitle() + "\n").copy().setStyle(style.withColor(Formatting.GREEN).withBold(true));
         return Texts.join(List.of(titleText, timeText, contentText), Text.empty());
     }
 
@@ -162,13 +162,13 @@ public class Util {
     public static Text fromBroadcast(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
-                Text.of("<").copyContentOnly(),
-                Text.of(broadcast.getPlayer()).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
-                LEFT_BRACKET.copyContentOnly(),
-                Text.of(broadcast.getServer()).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
-                Text.of("]>").copyContentOnly(),
-                Text.of(broadcast.getContent()).copyContentOnly()
+        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copy().setStyle(style.withColor(Formatting.AQUA)),
+                Text.of("<").copy(),
+                Text.of(broadcast.getPlayer()).copy().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+                LEFT_BRACKET.copy(),
+                Text.of(broadcast.getServer()).copy().setStyle(style.withColor(Formatting.GREEN)),
+                Text.of("]>").copy(),
+                Text.of(broadcast.getContent()).copy()
         );
         return Texts.join(texts, Text.of(""));
     }
@@ -176,13 +176,13 @@ public class Util {
     public static Text fromBroadcastToQQ(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
-                Text.of("<").copyContentOnly(),
-                Text.of(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
-                LEFT_BRACKET.copyContentOnly(),
-                Text.of(broadcast.getServer() + " -> QQ").copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
-                Text.of("]>").copyContentOnly(),
-                Text.of(broadcast.getContent()).copyContentOnly()
+        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copy().setStyle(style.withColor(Formatting.AQUA)),
+                Text.of("<").copy(),
+                Text.of(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copy().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+                LEFT_BRACKET.copy(),
+                Text.of(broadcast.getServer() + " -> QQ").copy().setStyle(style.withColor(Formatting.GREEN)),
+                Text.of("]>").copy(),
+                Text.of(broadcast.getContent()).copy()
         );
         return Texts.join(texts, Text.of(""));
     }

@@ -1,7 +1,7 @@
 package net.zhuruoling.omms.controller.fabric.mixin;
 
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
@@ -19,6 +19,8 @@ import java.util.Objects;
 
 import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
+import com.mojang.brigadier.CommandDispatcher;
+
 
 @Mixin(PlayerManager.class)
 public class PlayerReadyMixin {
@@ -28,10 +30,10 @@ public class PlayerReadyMixin {
     @Inject(method = "onPlayerConnect",at = @At("RETURN"))
     private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci){
         if (!ConstantStorage.isEnable())return;
-        String playerName = player.getName().copyContentOnly().getString();
+        String playerName = player.getName().copy().getString();
         String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),playerName);
         String result = invokeHttpGetRequest(url);
-        NbtCompound compound = new NbtCompound();
+        CompoundTag compound = new CompoundTag();
         compound.putString("servers", result);
         var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();
 
