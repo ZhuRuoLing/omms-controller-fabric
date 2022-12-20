@@ -16,11 +16,11 @@ public class PlayerChatMixin {
     @Shadow
     public ServerPlayerEntity player;
 
-    @Inject(at = @At("RETURN"), method = "onChatMessage")
+    @Inject(at = @At("RETURN"), method = "onGameMessage")
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
 
-        String raw = packet.chatMessage();
-        //System.out.println(raw);
+        String raw = packet.getChatMessage();
+        //System.out.println(rw);
         if (!raw.startsWith("/")) {
             Util.sendChatBroadcast(raw, this.player.getName().getString());
         }

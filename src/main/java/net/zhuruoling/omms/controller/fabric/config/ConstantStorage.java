@@ -6,7 +6,9 @@ import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import java.util.HashMap;
 
 public class ConstantStorage {
-    private static boolean enable = false;
+    private static boolean enableWhitelist = false;
+    private static boolean enableJoinmotd = false;
+    private static boolean enableChatBridge = false;
     private static String httpQueryAddress;
     private static String oldId;
     private static int httpQueryPort;
@@ -51,20 +53,23 @@ public class ConstantStorage {
     }
 
     private static String provider(String filename) {
-        return """
-                #OMMS config
-                enable=false
-                httpQueryAddr=localhost
-                httpQueryPort=50001
-                controllerName=omms-controller
-                usesWhitelist=my_whitelist
-                channel=GLOBAL
-                serverMappings""";
+        return "#OMMS config\n" +
+                "enableWhitelist=false\n" +
+                "enableJoinmotd=false\n" +
+                "enableChatBridge=false\n" +
+                "httpQueryAddr=localhost\n" +
+                "httpQueryPort=50001\n" +
+                "controllerName=omms-controller\n" +
+                "usesWhitelist=my_whitelist\n" +
+                "channel=GLOBAL\n" +
+                "serverMappings";
     }
 
     public static void init() {
         SimpleConfig config = SimpleConfig.of("omms").provider(ConstantStorage::provider).request();
-        setEnable(config.getOrDefault("enable", false));
+        setEnableWhitelist(config.getOrDefault("enableWhitelist", false));
+        setEnableChatBridge(config.getOrDefault("enableChatBridge", false));
+        setEnableJoinmotd(config.getOrDefault("enableJoinmotd", false));
         setChatChannel(config.getOrDefault("channel", "GLOBAL"));
         setControllerName(config.getOrDefault("controllerName", "omms-controller"));
         setHttpQueryAddress(config.getOrDefault("httpQueryAddr", "localhost"));
@@ -83,8 +88,8 @@ public class ConstantStorage {
                 }
                 ServerMapping mapping = new ServerMapping();
                 mapping.setWhitelistName(serverMappingNames);
-                String displayName = config.getOrDefault("serverMapping.%s.displayName".formatted(name), "");
-                String proxyName = config.getOrDefault("serverMapping.%s.proxyName".formatted(name), "");
+                String displayName = config.getOrDefault(String.format("serverMapping.%s.displayName",name), "");
+                String proxyName = config.getOrDefault(String.format("serverMapping.%s.proxyName",name), "");
                 if (displayName.isBlank() || proxyName.isBlank()) {
                     setServerMappings(null);
                     continue;
@@ -97,8 +102,8 @@ public class ConstantStorage {
         } else {
             ServerMapping mapping = new ServerMapping();
             mapping.setWhitelistName(serverMappingNames);
-            String displayName = config.getOrDefault("serverMapping.%s.displayName".formatted(serverMappingNames), "");
-            String proxyName = config.getOrDefault("serverMapping.%s.proxyName".formatted(serverMappingNames), "");
+            String displayName = config.getOrDefault(String.format("serverMapping.%s.displayName",serverMappingNames), "");
+            String proxyName = config.getOrDefault(String.format("serverMapping.%s.proxyName",serverMappingNames), "");
             if (displayName.isBlank() || proxyName.isBlank()) {
                 setServerMappings(null);
                 return;
@@ -111,12 +116,28 @@ public class ConstantStorage {
         }
     }
 
-    public static boolean isEnable() {
-        return enable;
+    public static boolean isEnableJoinmotd() {
+        return enableJoinmotd;
     }
 
-    public static void setEnable(boolean enable) {
-        ConstantStorage.enable = enable;
+    public static void setEnableJoinmotd(boolean enableJoinmotd) {
+        ConstantStorage.enableJoinmotd = enableJoinmotd;
+    }
+
+    public static boolean isEnableChatBridge() {
+        return enableChatBridge;
+    }
+
+    public static void setEnableChatBridge(boolean enableChatBridge) {
+        ConstantStorage.enableChatBridge = enableChatBridge;
+    }
+
+    public static boolean isEnableWhitelist() {
+        return enableWhitelist;
+    }
+
+    public static void setEnableWhitelist(boolean enableWhitelist) {
+        ConstantStorage.enableWhitelist = enableWhitelist;
     }
 
     public static String getHttpQueryAddress() {

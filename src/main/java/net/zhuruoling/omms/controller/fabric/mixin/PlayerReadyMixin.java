@@ -3,6 +3,7 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.ClientConnection;
+import net.minecraft.network.MessageType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -16,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
@@ -29,21 +31,15 @@ public class PlayerReadyMixin {
 
     @Inject(method = "onPlayerConnect",at = @At("RETURN"))
     private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci){
-        if (!ConstantStorage.isEnable())return;
+        if (!ConstantStorage.isEnableWhitelist())return;
         String playerName = player.getName().copy().getString();
-        String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),playerName);
+        String url = String.format("http://%s:%d/whitelist/queryAll/%s",ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(),playerName);
         String result = invokeHttpGetRequest(url);
         CompoundTag compound = new CompoundTag();
         compound.putString("servers", result);
         var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();
 
-        Objects.requireNonNull(player.getServer()).getCommandManager().execute(
-                dispatcher.parse(
-                        "menu %s".formatted(compound.asString())
-                        , player.getCommandSource()
-                )
-                ,"menu %s".formatted(compound.asString())
-        );
-        server.getPlayerManager().broadcast(Text.of("<%s> o/".formatted(playerName)),false);
+        Objects.requireNonNull(player.getServer()).getCommandManager().execute(player.getCommandSource(), String.format("menu %s",playerName));
+        server.getPlayerManager().broadcastChatMessage(Text.of(String.format("<%s> o/",playerName)), MessageType.CHAT, UUID.randomUUID());
     }
 }

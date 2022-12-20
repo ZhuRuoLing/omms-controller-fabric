@@ -1,7 +1,8 @@
 package net.zhuruoling.omms.controller.fabric.network;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.*;
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class UdpBroadcastSender extends Thread {
 
-    private final Logger logger = LoggerFactory.getLogger("UdpBroadcastSender");
+    private final Logger logger = LogManager.getLogger("");
     boolean stopped = false;
     private ConcurrentHashMap<Target, byte[]> queue = new ConcurrentHashMap<>();
     private HashMap<Target, MulticastSocket> multicastSocketCache = new HashMap<>();

@@ -20,13 +20,13 @@ public class ServerEntryTextFactory {
             color = "yellow";
         String finalColor = color;
         Gson gson = new GsonBuilder().create();
-        var jsonElement = gson.toJsonTree("{\"text\":\"%s\",\"color\":\"%s\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/server %S\"},\"hoverEvent\":{\"action\":\"show_text\",\"contents\":{\"text\":\"进入%s\",\"color\":\"white\"}}}"
-                .formatted(displayName,color,proxyName,displayName)
+        var jsonElement = gson.toJsonTree(String.format("{\"text\":\"%s\",\"color\":\"%s\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/server %S\"},\"hoverEvent\":{\"action\":\"show_text\",\"contents\":{\"text\":\"进入%s\",\"color\":\"white\"}}}"
+                ,displayName,color,proxyName,displayName)
         );
-        List<Text> serverText = Texts.toText( () -> displayName).getWithStyle(new Style.Serializer().deserialize(jsonElement, Style.class,null));
+        Text serverText = Texts.toText( () -> displayName).copy().setStyle(new Style.Serializer().deserialize(jsonElement, Style.class,null));
         Text right = Texts.toText(() -> "]");
         texts.add(left);
-        texts.addAll(serverText);
+        texts.add(serverText);
         texts.add(right);
         return texts;
     }

@@ -2,18 +2,16 @@ package net.zhuruoling.omms.controller.fabric;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.command.argument.NbtCompoundTagArgumentType;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.MessageType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
@@ -21,25 +19,27 @@ import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import net.zhuruoling.omms.controller.fabric.network.*;
 import net.zhuruoling.omms.controller.fabric.util.Util;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
-    private final Logger logger = LogUtils.getLogger();
+    private final Logger logger = LogManager.getLogger();
 
     @Override
     public void onInitializeServer() {
         ConstantStorage.init();
-        if (!ConstantStorage.isEnable()) return;
+        if (!ConstantStorage.isEnableWhitelist()) return;
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(literal("menu")
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> dispatcher.register(literal("menu")
                 .then(argument("data", NbtCompoundTagArgumentType.nbtCompound()).requires(source -> source.hasPermissionLevel(0)).executes(context -> {
                     try {
                         CompoundTag compound = NbtCompoundTagArgumentType.getCompoundTag(context, "data");
@@ -60,8 +60,8 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                             }
                             serverEntries.add(Util.fromServerString(mapping.getDisplayName(), mapping.getProxyName(), isCurrentServer, false));
                         }
-                        Text serverText = Texts.join(serverEntries, Util.SPACE);
-                        context.getSource().sendFeedback(Text.of("----------Welcome to %s server!----------".formatted(ConstantStorage.getControllerName())), false);
+                        Text serverText = Texts.join(serverEntries, (text -> Text.of(text.asString() + "  ")));
+                        context.getSource().sendFeedback(Text.of(String.format("----------Welcome to %s server!----------",ConstantStorage.getControllerName())), false);
                         context.getSource().sendFeedback(Text.of("    "), false);
                         context.getSource().sendFeedback(serverText, false);
                         context.getSource().sendFeedback(Text.of("Type \"/announcement latest\" to fetch latest announcement."), false);
@@ -73,11 +73,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     return 1;
                 }))));
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
             dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("sendToConsole")
                     .then(
                             RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
-                                        logger.info("<OMMS_Controller> %s".formatted(StringArgumentType.getString(context, "content")));
+                                        logger.info(String.format("<OMMS_Controller> %s",StringArgumentType.getString(context, "content")));
                                         return 0;
                                     }
 
@@ -86,11 +86,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             );
         });
 
-        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("announcement")
+        CommandRegistrationCallback.EVENT.register(((dispatcher, dedicated) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("announcement")
                 .then(LiteralArgumentBuilder.<ServerCommandSource>literal("latest")
                         .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                         .executes(context -> {
-                            String url = "http://%s:%d/announcement/latest".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
+                            String url = String.format("http://%s:%d/announcement/latest",ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
                             return getAnnouncementToPlayerFromUrl(context, url);
                         })
                 )
@@ -102,14 +102,14 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                         .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                                         .executes(context -> {
                                             String name = StringArgumentType.getString(context, "name");
-                                            String url = "http://%s:%d/announcement/get/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), name);
+                                            String url = String.format("http://%s:%d/announcement/get/%s",ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), name);
                                             return getAnnouncementToPlayerFromUrl(context, url);
                                         })
                         )
                 )
                 .then(LiteralArgumentBuilder.<ServerCommandSource>literal("list")
                         .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
-                            String url = "http://%s:%d/announcement/list".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
+                            String url = String.format("http://%s:%d/announcement/list",ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
                             String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
                             try {
                                 String[] list = new Gson().fromJson(result, String[].class);
@@ -127,7 +127,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                                                     ),
                                                             Text.of("]")
                                                     ),
-                                                    Text.of("")
+                                                    text1 -> text1
                                             )
                                             .copy()
                                             .setStyle(
@@ -151,7 +151,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                 System.out.println(texts);
                                 context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
                                 context.getSource().sendFeedback(Text.of(""), false);
-                                context.getSource().sendFeedback(Texts.join(texts, Text.of(" ")), false);
+                                context.getSource().sendFeedback(Texts.join(texts, text -> text.copy().append(Text.of(" "))), false);
                                 context.getSource().sendFeedback(Text.of(""), false);
                                 return 0;
                             } catch (Exception e) {
@@ -162,7 +162,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 )
         )));
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq")
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("qq")
                 .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                 .then(
                         RequiredArgumentBuilder.<ServerCommandSource, String>argument("content", StringArgumentType.greedyString()).requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
@@ -181,11 +181,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 if (Objects.equals(broadcast.getId(), ConstantStorage.getOldId())) return;
                 //logger.info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
                 if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
-                    server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
+                    server.execute(() -> server.getPlayerManager().broadcastChatMessage(Util.fromBroadcastToQQ(broadcast), MessageType.CHAT, UUID.randomUUID()));
                     return;
                 }
                 if (!Objects.equals(broadcast.getServer(), ConstantStorage.getControllerName())) {
-                    server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
+                    server.execute(() -> server.getPlayerManager().broadcastChatMessage(Util.fromBroadcast(broadcast), MessageType.CHAT, UUID.randomUUID()));
                 }
             });
 
@@ -202,11 +202,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     } else {
                         if (instruction.getType() == InstructionType.RUN_COMMAND) {
                             if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
-                                logger.info("Received Command: %s".formatted(instruction.getCommandString()));
+                                logger.info(String.format("Received Command: %s",instruction.getCommandString()));
                                 server.execute(() -> {
                                     var dispatcher = server.getCommandManager().getDispatcher();
-                                    var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
-                                    server.getCommandManager().execute(results, instruction.getCommandString());
+                                    //var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
+                                    server.getCommandManager().execute(server.getCommandSource(),instruction.getCommandString());
                                 });
 
                             }
@@ -248,7 +248,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         String result = Util.invokeHttpGetRequest(url);
         if (result != null) {
             if (result.equals("NO_ANNOUNCEMENT")) {
-                Text text = Texts.join(Text.of("No announcement.").copy().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+                Text text = Text.of("No announcement.").copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA));
                 context.getSource().sendFeedback(text, false);
                 return 0;
             }
@@ -262,7 +262,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 e.printStackTrace();
             }
         } else {
-            Text text = Texts.join(Text.of("No announcement.").copy().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+            Text text = Text.of("No announcement.").copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA));
             context.getSource().sendFeedback(text, false);
             return 0;
         }

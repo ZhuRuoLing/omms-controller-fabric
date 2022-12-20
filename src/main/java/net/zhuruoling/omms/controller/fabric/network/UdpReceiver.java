@@ -2,8 +2,8 @@ package net.zhuruoling.omms.controller.fabric.network;
 
 
 import net.minecraft.server.MinecraftServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +11,7 @@ import java.util.function.BiConsumer;
 
 
 public class UdpReceiver extends Thread{
-    private static final Logger logger = LoggerFactory.getLogger("UdpBroadcastReceiver");
+    private static final Logger logger = LogManager.getLogger("UdpBroadcastReceiver");
     BiConsumer<MinecraftServer, String> function = null;
     UdpBroadcastSender.Target target = null;
     private final MinecraftServer server;
