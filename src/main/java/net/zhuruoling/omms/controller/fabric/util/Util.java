@@ -26,9 +26,9 @@ import java.time.format.FormatStyle;
 import java.util.*;
 
 public class Util {
-    public static final Text LEFT_BRACKET = Text.of("[");
-    public static final Text RIGHT_BRACKET = Text.of("]");
-    public static final Text SPACE = Text.of(" ");
+    public static final Text LEFT_BRACKET = new LiteralText("[");
+    public static final Text RIGHT_BRACKET = new LiteralText("]");
+    public static final Text SPACE = new LiteralText(" ");
 
     public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4", 10086);
     public static final UdpBroadcastSender.Target TARGET_CONTROL = new UdpBroadcastSender.Target("224.114.51.4", 10087);
@@ -123,18 +123,18 @@ public class Util {
         Style style = Style.EMPTY;
         if (isMissingServer) {
             style = style.withColor(TextColor.fromFormatting(Formatting.RED));
-            style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Missing server name mapping key.")));
+            style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("Missing server name mapping key.")));
         } else {
             if (isCurrentServer) {
                 style = style.withColor(TextColor.fromFormatting(Formatting.YELLOW));
-                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Current server")));
+                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("Current server")));
             } else {
                 style = style.withColor(Formatting.AQUA);
                 style = style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, String.format("/server %s",proxyName)));
-                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(String.format("Goto server %s",displayName))));
+                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText(String.format("Goto server %s",displayName))));
             }
         }
-        Text name = Text.of(displayName).copy().setStyle(style);
+        Text name = new LiteralText(displayName).copy().setStyle(style);
         List<Text> texts = List.of(Util.LEFT_BRACKET, name, Util.RIGHT_BRACKET);
         return Texts.join(texts, text -> text);
     }
@@ -143,32 +143,28 @@ public class Util {
         Style style = Style.EMPTY;
         String pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.FULL, FormatStyle.FULL, Chronology.ofLocale(Locale.getDefault()), Locale.getDefault());
         SimpleDateFormat format = new SimpleDateFormat(pattern);
-        Text timeText = Text.of(String.format("Published at %s\n",format.format(new Date(announcement.getTimeMillis()))))
+        Text timeText = new LiteralText(String.format("Published at %s\n",format.format(new Date(announcement.getTimeMillis()))))
                 .copy().setStyle(style.withColor(TextColor.fromFormatting(Formatting.LIGHT_PURPLE)).withBold(true));
         StringBuilder builder = new StringBuilder();
         for (String s : announcement.getContent()) {
             builder.append(s);
             builder.append("\n");
         }
-        Text contentText = Text.of(builder.toString()).copy();
-        Text titleText = Text.of(announcement.getTitle() + "\n").copy().setStyle(style.withColor(Formatting.GREEN).withBold(true));
+        Text contentText = new LiteralText(builder.toString()).copy();
+        Text titleText = new LiteralText(announcement.getTitle() + "\n").copy().setStyle(style.withColor(Formatting.GREEN).withBold(true));
         return Texts.join(List.of(titleText, timeText, contentText), text -> text);
     }
-
-
-
-
 
     public static Text fromBroadcast(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copy().setStyle(style.withColor(Formatting.AQUA)),
-                Text.of("<").copy(),
-                Text.of(broadcast.getPlayer()).copy().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withUnderline(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+        List<Text> texts = List.of(new LiteralText(broadcast.getChannel()).copy().setStyle(style.withColor(Formatting.AQUA)),
+                new LiteralText("<").copy(),
+                new LiteralText(broadcast.getPlayer()).copy().setStyle(style.withColor(Formatting.YELLOW).withBold(true)),
                 LEFT_BRACKET.copy(),
-                Text.of(broadcast.getServer()).copy().setStyle(style.withColor(Formatting.GREEN)),
-                Text.of("]>").copy(),
-                Text.of(broadcast.getContent()).copy()
+                new LiteralText(broadcast.getServer()).copy().setStyle(style.withColor(Formatting.GREEN)),
+                new LiteralText("]>").copy(),
+                new LiteralText(broadcast.getContent()).copy()
         );
         return Texts.join(texts, text -> text);
     }
@@ -176,13 +172,13 @@ public class Util {
     public static Text fromBroadcastToQQ(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copy().setStyle(style.withColor(Formatting.AQUA)),
-                Text.of("<").copy(),
-                Text.of(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copy().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withUnderline(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+        List<Text> texts = List.of(new LiteralText(broadcast.getChannel()).copy().setStyle(style.withColor(Formatting.AQUA)),
+                new LiteralText("<").copy(),
+                new LiteralText(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copy().setStyle(style.withColor(Formatting.YELLOW).withBold(true)),
                 LEFT_BRACKET.copy(),
-                Text.of(broadcast.getServer() + " -> QQ").copy().setStyle(style.withColor(Formatting.GREEN)),
-                Text.of("]>").copy(),
-                Text.of(broadcast.getContent()).copy()
+                new LiteralText(broadcast.getServer() + " -> QQ").copy().setStyle(style.withColor(Formatting.GREEN)),
+                new LiteralText("]>").copy(),
+                new LiteralText(broadcast.getContent()).copy()
         );
         return Texts.join(texts, text -> text);
     }

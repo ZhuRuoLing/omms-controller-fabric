@@ -44,7 +44,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     try {
                         CompoundTag compound = NbtCompoundTagArgumentType.getCompoundTag(context, "data");
                         if (!compound.contains("servers")) {
-                            context.getSource().sendError(Text.of("Wrong server data."));
+                            context.getSource().sendError(new LiteralText("Wrong server data."));
                             return -1;
                         }
                         String data = compound.getString("servers");
@@ -60,11 +60,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                             }
                             serverEntries.add(Util.fromServerString(mapping.getDisplayName(), mapping.getProxyName(), isCurrentServer, false));
                         }
-                        Text serverText = Texts.join(serverEntries, (text -> Text.of(text.asString() + "  ")));
-                        context.getSource().sendFeedback(Text.of(String.format("----------Welcome to %s server!----------",ConstantStorage.getControllerName())), false);
-                        context.getSource().sendFeedback(Text.of("    "), false);
+                        Text serverText = Texts.join(serverEntries, (text -> new LiteralText(text.asString() + "  ")));
+                        context.getSource().sendFeedback(new LiteralText(String.format("----------Welcome to %s server!----------",ConstantStorage.getControllerName())), false);
+                        context.getSource().sendFeedback(new LiteralText("    "), false);
                         context.getSource().sendFeedback(serverText, false);
-                        context.getSource().sendFeedback(Text.of("Type \"/announcement latest\" to fetch latest announcement."), false);
+                        context.getSource().sendFeedback(new LiteralText("Type \"/announcement latest\" to fetch latest announcement."), false);
                         return 1;
 
                     } catch (Exception e) {
@@ -118,14 +118,14 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                     System.out.println(s);
                                     var text = Texts.join(
                                                     List.of(
-                                                            Text.of("["),
-                                                            Text.of(s)
+                                                            new LiteralText("["),
+                                                            new LiteralText(s)
                                                                     .copy()
                                                                     .setStyle(
                                                                             Style.EMPTY
                                                                                     .withColor(Formatting.GREEN)
                                                                     ),
-                                                            Text.of("]")
+                                                            new LiteralText("]")
                                                     ),
                                                     text1 -> text1
                                             )
@@ -135,7 +135,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                                                             .withHoverEvent(
                                                                     new HoverEvent(
                                                                             HoverEvent.Action.SHOW_TEXT,
-                                                                            Text.of("Click to get announcement.")
+                                                                            new LiteralText("Click to get announcement.")
                                                                     )
                                                             )
                                                             .withClickEvent(
@@ -149,10 +149,10 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
                                 }
                                 System.out.println(texts);
-                                context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
-                                context.getSource().sendFeedback(Text.of(""), false);
-                                context.getSource().sendFeedback(Texts.join(texts, text -> text.copy().append(Text.of(" "))), false);
-                                context.getSource().sendFeedback(Text.of(""), false);
+                                context.getSource().sendFeedback(new LiteralText("-------Announcements-------"), false);
+                                context.getSource().sendFeedback(new LiteralText(""), false);
+                                context.getSource().sendFeedback(Texts.join(texts, text -> text.copy().append(new LiteralText(" "))), false);
+                                context.getSource().sendFeedback(new LiteralText(""), false);
                                 return 0;
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -248,7 +248,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         String result = Util.invokeHttpGetRequest(url);
         if (result != null) {
             if (result.equals("NO_ANNOUNCEMENT")) {
-                Text text = Text.of("No announcement.").copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA));
+                Text text = new LiteralText("No announcement.").copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA));
                 context.getSource().sendFeedback(text, false);
                 return 0;
             }
@@ -262,7 +262,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 e.printStackTrace();
             }
         } else {
-            Text text = Text.of("No announcement.").copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA));
+            Text text = new LiteralText("No announcement.").copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA));
             context.getSource().sendFeedback(text, false);
             return 0;
         }

@@ -7,6 +7,7 @@ import net.minecraft.network.MessageType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import org.spongepowered.asm.mixin.Final;
@@ -40,6 +41,6 @@ public class PlayerReadyMixin {
         var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();
 
         Objects.requireNonNull(player.getServer()).getCommandManager().execute(player.getCommandSource(), String.format("menu %s",playerName));
-        server.getPlayerManager().broadcastChatMessage(Text.of(String.format("<%s> o/",playerName)), MessageType.CHAT, UUID.randomUUID());
+        server.getPlayerManager().broadcastChatMessage(new LiteralText(String.format("<%s> o/",playerName)), MessageType.CHAT, UUID.randomUUID());
     }
 }
