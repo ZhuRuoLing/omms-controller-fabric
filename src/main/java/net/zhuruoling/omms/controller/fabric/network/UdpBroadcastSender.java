@@ -1,7 +1,9 @@
 package net.zhuruoling.omms.controller.fabric.network;
 
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Unsafe;
 
 import java.io.IOException;
 import java.net.*;
@@ -35,8 +37,13 @@ public class UdpBroadcastSender extends Thread {
     public void run() {
         logger.info("Starting UdpBroadcastSender.");
         while (!stopped) {
-            if (!queue.isEmpty()) {
-                queue.forEach(this::send);
+            try {
+                if (!queue.isEmpty()) {
+                    queue.forEach(this::send);
+                }
+                sleep(10);
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }
         logger.info("Stopped!");

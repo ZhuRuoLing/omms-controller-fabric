@@ -1,4 +1,4 @@
-package net.zhuruoling.omms.controller.fabric;
+package net.zhuruoling.omms.controller.fabric.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

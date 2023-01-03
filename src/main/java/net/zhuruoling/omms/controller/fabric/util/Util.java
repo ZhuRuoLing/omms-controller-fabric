@@ -2,8 +2,11 @@ package net.zhuruoling.omms.controller.fabric.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.mojang.authlib.GameProfile;
+import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.client.realms.util.JsonUtils;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
@@ -222,5 +225,35 @@ public class Util {
         catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    public static boolean checkIsFakePlayer(String playerName) {
+        return playerName.startsWith(ConstantStorage.getAllowedFakePlayerPrefix()) || playerName.endsWith(ConstantStorage.getAllowedFakePlayerSuffix());
+    }
+
+    public static int getAnnouncementToPlayerFromUrl(CommandContext<ServerCommandSource> context, String url) {
+        String result = invokeHttpGetRequest(url);
+        if (result != null) {
+            if (result.equals("NO_ANNOUNCEMENT")) {
+                Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+                context.getSource().sendFeedback(text, false);
+                return 0;
+            }
+            System.out.println(result);
+            try {
+                String jsonStr = new String(Base64.getDecoder().decode(result.replace("\"", "")), StandardCharsets.UTF_8);
+                Gson gson = new GsonBuilder().serializeNulls().create();
+                var announcement = gson.fromJson(jsonStr, Announcement.class);
+                context.getSource().sendFeedback(fromAnnouncement(announcement), false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+            context.getSource().sendFeedback(text, false);
+            return 0;
+        }
+
+        return 0;
     }
 }

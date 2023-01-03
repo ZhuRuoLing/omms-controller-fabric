@@ -20,6 +20,7 @@ import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static net.zhuruoling.omms.controller.fabric.util.Util.checkIsFakePlayer;
 import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
 
@@ -30,12 +31,13 @@ public abstract class PlayerJoinMixin {
     @Shadow
     @Nullable
     public abstract ServerPlayerEntity getPlayer(String name);
-
+//return HeliumUserManager::CapabilitiesToString(static_cast<hcap_t>(helium_user_manager.GetUserGroup("")->GetCapabilities().GetCapabilities()));
     @Inject(method = "checkCanJoin", at = @At("HEAD"), cancellable = true)
     private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir) {
-        if (!ConstantStorage.isEnable()) return;
+        if (!ConstantStorage.isEnableWhitelist()) return;
         try {
             String player = profile.getName();
+            if (checkIsFakePlayer(profile.getName()))return;
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), player);
             String result = invokeHttpGetRequest(url);
             if (result.isEmpty()) {
@@ -50,12 +52,12 @@ public abstract class PlayerJoinMixin {
             }
             if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())) {
                 LOGGER.info("Successfully authed player %s".formatted(player));
-                return;
             } else {
                 LOGGER.info("Cannot auth player %s".formatted(player));
                 cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             LOGGER.error("Failed to parse whitelist server return value.");
             var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
             cir.setReturnValue(text);

@@ -6,7 +6,11 @@ import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import java.util.HashMap;
 
 public class ConstantStorage {
-    private static boolean enable = false;
+    private static boolean enableWhitelist = false;
+
+    private static boolean enableChatBridge=false;
+    private static boolean enableJoinMotd=false;
+    private static boolean enableRemoteControl=false;
     private static String httpQueryAddress;
     private static String oldId;
     private static int httpQueryPort;
@@ -17,6 +21,9 @@ public class ConstantStorage {
     private static UdpBroadcastSender sender;
     private static UdpReceiver chatReceiver;
     private static UdpReceiver instructionReceiver;
+
+    private static String allowedFakePlayerPrefix = "";
+    private static  String allowedFakePlayerSuffix = "";
 
     public static String getOldId() {
         return oldId;
@@ -53,23 +60,33 @@ public class ConstantStorage {
     private static String provider(String filename) {
         return """
                 #OMMS config
-                enable=false
+                enableWhitelist=false
+                enableChatBridge=false
+                enableJoinMotd=false
+                enableRemoteControl=false
                 httpQueryAddr=localhost
                 httpQueryPort=50001
                 controllerName=omms-controller
                 usesWhitelist=my_whitelist
                 channel=GLOBAL
+                allowedFakePlayerPrefix=bot_
+                allowedFakePlayerSuffix=_bot
                 serverMappings""";
     }
 
     public static void init() {
         SimpleConfig config = SimpleConfig.of("omms").provider(ConstantStorage::provider).request();
-        setEnable(config.getOrDefault("enable", false));
+        setEnableWhitelist(config.getOrDefault("enableWhitelist", false));
+        setEnableChatBridge(config.getOrDefault("enableChatBridge", false));
+        setEnableJoinMotd(config.getOrDefault("enableJoinMotd", false));
+        setEnableRemoteControl(config.getOrDefault("enableRemoteControl", false));
         setChatChannel(config.getOrDefault("channel", "GLOBAL"));
         setControllerName(config.getOrDefault("controllerName", "omms-controller"));
         setHttpQueryAddress(config.getOrDefault("httpQueryAddr", "localhost"));
         setHttpQueryPort(config.getOrDefault("httpQueryPort", 50001));
         setWhitelistName(config.getOrDefault("usesWhitelist", "my_whitelist"));
+        setAllowedFakePlayerPrefix(config.getOrDefault("allowedFakePlayerPrefix", "bot_"));
+        setAllowedFakePlayerSuffix(config.getOrDefault("allowedFakePlayerSuffix", "_bot"));
         String serverMappingNames = config.getOrDefault("serverMappings", "");
         if (serverMappingNames.contains(",")) {
             if (serverMappingNames.isBlank()) {
@@ -111,12 +128,52 @@ public class ConstantStorage {
         }
     }
 
-    public static boolean isEnable() {
-        return enable;
+    public static boolean isEnableChatBridge() {
+        return enableChatBridge;
     }
 
-    public static void setEnable(boolean enable) {
-        ConstantStorage.enable = enable;
+    private static void setEnableChatBridge(boolean enableChatBridge) {
+        ConstantStorage.enableChatBridge = enableChatBridge;
+    }
+
+    public static boolean isEnableJoinMotd() {
+        return enableJoinMotd;
+    }
+
+    private static void setEnableJoinMotd(boolean enableJoinMotd) {
+        ConstantStorage.enableJoinMotd = enableJoinMotd;
+    }
+
+    public static boolean isEnableRemoteControl() {
+        return enableRemoteControl;
+    }
+
+    private static void setEnableRemoteControl(boolean enableRemoteControl) {
+        ConstantStorage.enableRemoteControl = enableRemoteControl;
+    }
+
+    public static String getAllowedFakePlayerPrefix() {
+        return allowedFakePlayerPrefix;
+    }
+
+    private static void setAllowedFakePlayerPrefix(String allowedFakePlayerPrefix) {
+        ConstantStorage.allowedFakePlayerPrefix = allowedFakePlayerPrefix;
+    }
+
+    public static String getAllowedFakePlayerSuffix() {
+        return allowedFakePlayerSuffix;
+    }
+
+    private static void setAllowedFakePlayerSuffix(String allowedFakePlayerSuffix) {
+        ConstantStorage.allowedFakePlayerSuffix = allowedFakePlayerSuffix;
+    }
+
+    public static boolean isEnableWhitelist() {
+        return enableWhitelist;
+    }
+
+    public static void setEnableWhitelist(boolean enableWhitelist) {
+        ConstantStorage.enableWhitelist = enableWhitelist;
     }
 
     public static String getHttpQueryAddress() {
