@@ -2,9 +2,7 @@ package net.zhuruoling.omms.controller.fabric.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.client.realms.util.JsonUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
@@ -17,10 +15,16 @@ import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.chrono.Chronology;
@@ -38,54 +42,17 @@ public class Util {
 
     public static final Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public static String invokeHttpGetRequest(String httpUrl) {
-        HttpURLConnection connection = null;
-        InputStream is = null;
-        BufferedReader br = null;
-        StringBuilder result = new StringBuilder();
-        try {
-            URL url = new URL(httpUrl);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setReadTimeout(500);
-            connection.connect();
-            if (connection.getResponseCode() == 200) {
-                is = connection.getInputStream();
-                if (null != is) {
-                    br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                    String temp;
-                    while (null != (temp = br.readLine())) {
-                        result.append(temp);
-                    }
-                }
-            }
-            else {
-                connection.disconnect();
-                return null;
-            }
+    public static String invokeHttpGetRequest(String httpUrl) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(httpUrl)).build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
+        return response.body();
+    }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (null != br) {
-                try {
-                    br.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            if (null != is) {
-                try {
-                    is.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            if (connection != null) {
-                connection.disconnect();
-            }
-        }
-        return result.toString();
+    public static void invokeHttpPostRequest(String url, String content) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder().POST(HttpRequest.BodyPublishers.ofString(content)).uri(URI.create(url)).build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
     }
 
 
@@ -102,7 +69,7 @@ public class Util {
         int i = Integer.parseInt(new SimpleDateFormat("yyyyMMdd").format(date));
         int j = Integer.parseInt(new SimpleDateFormat("hhmm").format(date));
         int k = new SimpleDateFormat("yyyyMMddhhmm").format(date).hashCode();
-        return resloveToken(token, password, i, j, k);
+        return resolveToken(token, password, i, j, k);
     }
 
 
@@ -114,7 +81,7 @@ public class Util {
         return token;
     }
 
-    public static boolean resloveToken(int token, int password, int i, int j, int k) {
+    public static boolean resolveToken(int token, int password, int i, int j, int k) {
         int t = token;
         int var1 = t ^ password;
 
@@ -209,7 +176,7 @@ public class Util {
         }
         return stringBuffer.toString();
     }
-    public static void sendStatus(MinecraftServer server, UdpBroadcastSender.Target target){
+    public static void sendStatus(MinecraftServer server){
         var status = new Status(
                 ConstantStorage.getControllerName(),
                 ControllerTypes.FABRIC,
@@ -217,12 +184,9 @@ public class Util {
                 server.getMaxPlayerCount(),
                 Arrays.asList(server.getPlayerNames())
         );
-        ConstantStorage.getSender().createMulticastSocketCache(target);
         try {
-            Thread.sleep(50);
-            ConstantStorage.getSender().addToQueue(target,gson.toJson(status));
-        }
-        catch (Exception e){
+            invokeHttpPostRequest(ConstantStorage.getHttpQueryAddress(), new GsonBuilder().serializeNulls().create().toJson(status));
+        }catch (Exception e){
             e.printStackTrace();
         }
     }
@@ -232,28 +196,31 @@ public class Util {
     }
 
     public static int getAnnouncementToPlayerFromUrl(CommandContext<ServerCommandSource> context, String url) {
-        String result = invokeHttpGetRequest(url);
-        if (result != null) {
-            if (result.equals("NO_ANNOUNCEMENT")) {
+        try {
+            String result = invokeHttpGetRequest(url);
+            if (result != null) {
+                if (result.equals("NO_ANNOUNCEMENT")) {
+                    Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
+                    context.getSource().sendFeedback(text, false);
+                    return 0;
+                }
+                System.out.println(result);
+                try {
+                    String jsonStr = new String(Base64.getDecoder().decode(result.replace("\"", "")), StandardCharsets.UTF_8);
+                    Gson gson = new GsonBuilder().serializeNulls().create();
+                    var announcement = gson.fromJson(jsonStr, Announcement.class);
+                    context.getSource().sendFeedback(fromAnnouncement(announcement), false);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
                 Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
                 context.getSource().sendFeedback(text, false);
                 return 0;
             }
-            System.out.println(result);
-            try {
-                String jsonStr = new String(Base64.getDecoder().decode(result.replace("\"", "")), StandardCharsets.UTF_8);
-                Gson gson = new GsonBuilder().serializeNulls().create();
-                var announcement = gson.fromJson(jsonStr, Announcement.class);
-                context.getSource().sendFeedback(fromAnnouncement(announcement), false);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
-            context.getSource().sendFeedback(text, false);
-            return 0;
+        }catch (Exception e){
+            e.printStackTrace();
         }
-
         return 0;
     }
 }

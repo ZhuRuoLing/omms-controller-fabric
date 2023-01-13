@@ -109,8 +109,8 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 .then(LiteralArgumentBuilder.<ServerCommandSource>literal("list")
                         .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
                             String url = "http://%s:%d/announcement/list".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort());
-                            String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
                             try {
+                                String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
                                 String[] list = new Gson().fromJson(result, String[].class);
                                 ArrayList<Text> texts = new ArrayList<>();
                                 for (String s : list) {
@@ -206,8 +206,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     if (instruction.getControllerType() == ControllerTypes.FABRIC) {
                         if (instruction.getType() == InstructionType.UPLOAD_STATUS) {
                             logger.info("Sending status.");
-                            UdpBroadcastSender.Target target = gson.fromJson(instruction.getCommandString(), UdpBroadcastSender.Target.class);
-                            Util.sendStatus(s, target);
+                            Util.sendStatus(s);
                         } else {
                             if (instruction.getType() == InstructionType.RUN_COMMAND) {
                                 if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
