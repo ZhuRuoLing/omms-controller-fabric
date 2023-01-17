@@ -14,13 +14,8 @@ import net.zhuruoling.omms.controller.fabric.network.ControllerTypes;
 import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -51,8 +46,12 @@ public class Util {
 
     public static void invokeHttpPostRequest(String url, String content) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().POST(HttpRequest.BodyPublishers.ofString(content)).uri(URI.create(url)).build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .POST(HttpRequest.BodyPublishers.ofString(content))
+                .header("Content-Type", "text/plain")
+                .uri(URI.create(url)).build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
+        System.out.println(response.statusCode());
     }
 
 
@@ -185,7 +184,7 @@ public class Util {
                 Arrays.asList(server.getPlayerNames())
         );
         try {
-            invokeHttpPostRequest(ConstantStorage.getHttpQueryAddress(), new GsonBuilder().serializeNulls().create().toJson(status));
+            invokeHttpPostRequest("http://%s:%d/status/upload".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort()), new GsonBuilder().serializeNulls().create().toJson(status));
         }catch (Exception e){
             e.printStackTrace();
         }
