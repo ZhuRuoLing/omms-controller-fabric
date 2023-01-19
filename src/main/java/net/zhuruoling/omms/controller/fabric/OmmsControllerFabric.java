@@ -16,6 +16,7 @@ import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
 import net.zhuruoling.omms.controller.fabric.network.*;
+import net.zhuruoling.omms.controller.fabric.util.OmmsCommandOutput;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.slf4j.Logger;
 
@@ -199,26 +200,29 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
             if (ConstantStorage.isEnableRemoteControl()) {
                 var instructionReceiver = new UdpReceiver(server, Util.TARGET_CONTROL, (s, m) -> {
-
                     Gson gson = new GsonBuilder().serializeNulls().create();
                     Instruction instruction = gson.fromJson(m, Instruction.class);
-
-                    if (instruction.getControllerType() == ControllerTypes.FABRIC) {
-                        if (instruction.getType() == InstructionType.UPLOAD_STATUS) {
+                    if (instruction.getControllerType() != ControllerTypes.FABRIC) {
+                        return;
+                    }
+                    switch (instruction.getType()) {
+                        case UPLOAD_STATUS -> {
                             logger.info("Sending status.");
                             Util.sendStatus(s);
-                        } else {
-                            if (instruction.getType() == InstructionType.RUN_COMMAND) {
-                                if (Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName())) {
-                                    logger.info("Received Command: %s".formatted(instruction.getCommandString()));
-                                    server.execute(() -> {
-                                        var dispatcher = server.getCommandManager().getDispatcher();
-                                        var results = dispatcher.parse(instruction.getCommandString(), server.getCommandSource());
-                                        server.getCommandManager().execute(results, instruction.getCommandString());
-                                    });
-
-                                }
-                            }
+                        }
+                        case RUN_COMMAND -> {
+                            if (!Objects.equals(instruction.getTargetControllerName(), ConstantStorage.getControllerName()))
+                                return;
+                            logger.info("Received Command: %s".formatted(instruction.getCommandString()));
+                            server.execute(() -> {
+                                var dispatcher = server.getCommandManager().getDispatcher();
+                                var commandOutput = new OmmsCommandOutput(server);
+                                var commandSource = commandOutput.createOmmsCommandSource();
+                                var results = dispatcher.parse(instruction.getCommandString(), commandSource);
+                                server.getCommandManager().execute(results, instruction.getCommandString());
+                                var commandResult = commandOutput.asString();
+                                Util.submitToExecutor(() -> Util.submitCommandLog(instruction.getCommandString(), commandResult));
+                            });
                         }
                     }
                 });
@@ -242,6 +246,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 ConstantStorage.getChatReceiver().interrupt();
             if (ConstantStorage.isEnableRemoteControl())
                 ConstantStorage.getInstructionReceiver().interrupt();
+            ConstantStorage.getExecutorService().shutdown();
         });
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
@@ -251,6 +256,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                 ConstantStorage.getChatReceiver().interrupt();
             if (ConstantStorage.isEnableRemoteControl())
                 ConstantStorage.getInstructionReceiver().interrupt();
+            ConstantStorage.getExecutorService().shutdown();
         });
         logger.info("Hello World!");
     }

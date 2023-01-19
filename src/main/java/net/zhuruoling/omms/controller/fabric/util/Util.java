@@ -3,6 +3,8 @@ package net.zhuruoling.omms.controller.fabric.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.logging.LogUtils;
+import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
@@ -184,7 +186,7 @@ public class Util {
                 Arrays.asList(server.getPlayerNames())
         );
         try {
-            invokeHttpPostRequest("http://%s:%d/status/upload".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort()), new GsonBuilder().serializeNulls().create().toJson(status));
+            invokeHttpPostRequest("http://%s:%d/controller/status/upload".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort()), new GsonBuilder().serializeNulls().create().toJson(status));
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -221,5 +223,24 @@ public class Util {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    public static void submitToExecutor(Runnable runnable){
+        synchronized (ConstantStorage.getExecutorService()){
+            if (ConstantStorage.getExecutorService().isShutdown()) {
+                LogUtils.getLogger().error("Executor service already stopped!");
+                return;
+            }
+            ConstantStorage.getExecutorService().submit(runnable);
+        }
+    }
+
+    public static void submitCommandLog(String cmd,String out){
+        try {
+            invokeHttpPostRequest("http://%s:%d/controller/command/upload".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort()),
+                    gson.toJson(new CommandOutputData(ConstantStorage.getControllerName(), cmd, out)));
+        }catch (Exception e){
+            LogUtils.getLogger().error("Error occurred while updating command log.", e);
+        }
     }
 }

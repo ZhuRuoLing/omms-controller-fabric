@@ -4,6 +4,9 @@ import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class ConstantStorage {
     private static boolean enableWhitelist = false;
@@ -21,6 +24,7 @@ public class ConstantStorage {
     private static UdpBroadcastSender sender;
     private static UdpReceiver chatReceiver;
     private static UdpReceiver instructionReceiver;
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
     private static String allowedFakePlayerPrefix = "";
     private static  String allowedFakePlayerSuffix = "";
@@ -225,6 +229,9 @@ public class ConstantStorage {
         ConstantStorage.serverMappings = serverMappings;
     }
 
+    public static ExecutorService getExecutorService() {
+        return executorService;
+    }
 
     public static class ServerMapping {
         private String displayName;
