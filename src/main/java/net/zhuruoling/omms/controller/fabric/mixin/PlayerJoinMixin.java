@@ -40,20 +40,24 @@ public abstract class PlayerJoinMixin {
             if (checkIsFakePlayer(profile.getName()))return;
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), player);
             String result = invokeHttpGetRequest(url);
-            if (result.isEmpty()) {
-                var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
-                cir.setReturnValue(text);
-            }
-            Gson gson = new GsonBuilder().serializeNulls().create();
-            String[] whitelists = gson.fromJson(result, String[].class);
-            if (Objects.isNull(whitelists)) {
-                var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
-                cir.setReturnValue(text);
-            }
-            if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())) {
-                LOGGER.info("Successfully authed player %s".formatted(player));
-            } else {
-                LOGGER.info("Cannot auth player %s".formatted(player));
+            if (result != null){
+                if (result.isEmpty()) {
+                    var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
+                    cir.setReturnValue(text);
+                }
+                Gson gson = new GsonBuilder().serializeNulls().create();
+                String[] whitelists = gson.fromJson(result, String[].class);
+                if (Objects.isNull(whitelists)) {
+                    var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
+                    cir.setReturnValue(text);
+                }
+                if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())) {
+                    LOGGER.info("Successfully authed player %s".formatted(player));
+                } else {
+                    LOGGER.info("Cannot auth player %s".formatted(player));
+                    cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
+                }
+            }else {
                 cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
             }
         } catch (Exception e) {
