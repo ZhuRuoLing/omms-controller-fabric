@@ -3,13 +3,13 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
-import com.mojang.logging.LogUtils;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
+import net.zhuruoling.omms.controller.fabric.config.Config;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,27 +20,31 @@ import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static net.zhuruoling.omms.controller.fabric.util.Util.checkIsFakePlayer;
 import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
 
 @Mixin(value = net.minecraft.server.PlayerManager.class)
 public abstract class PlayerJoinMixin {
-    Logger LOGGER = LogUtils.getLogger();
+
+    @Shadow
+    @Final
+    private static Logger LOGGER;
 
     @Shadow
     @Nullable
     public abstract ServerPlayerEntity getPlayer(String name);
-//return HeliumUserManager::CapabilitiesToString(static_cast<hcap_t>(helium_user_manager.GetUserGroup("")->GetCapabilities().GetCapabilities()));
+
     @Inject(method = "checkCanJoin", at = @At("HEAD"), cancellable = true)
     private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir) {
-        if (!ConstantStorage.isEnableWhitelist()) return;
+        if (address == null) {
+            return;
+        }
+        if (!Config.INSTANCE.isEnableWhitelist()) return;
         try {
             String player = profile.getName();
-            if (checkIsFakePlayer(profile.getName()))return;
-            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort(), player);
+            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), player);
             String result = invokeHttpGetRequest(url);
-            if (result != null){
+            if (result != null) {
                 if (result.isEmpty()) {
                     var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                     cir.setReturnValue(text);
@@ -51,13 +55,13 @@ public abstract class PlayerJoinMixin {
                     var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                     cir.setReturnValue(text);
                 }
-                if (Arrays.stream(whitelists).toList().contains(ConstantStorage.getWhitelistName())) {
+                if (Arrays.stream(whitelists).toList().contains(Config.INSTANCE.getWhitelistName())) {
                     LOGGER.info("Successfully authed player %s".formatted(player));
                 } else {
                     LOGGER.info("Cannot auth player %s".formatted(player));
                     cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
                 }
-            }else {
+            } else {
                 cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
             }
         } catch (Exception e) {

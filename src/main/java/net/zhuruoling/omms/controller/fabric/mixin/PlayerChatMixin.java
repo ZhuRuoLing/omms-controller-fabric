@@ -3,7 +3,7 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
+import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,7 +19,7 @@ public class PlayerChatMixin {
 
     @Inject(at = @At("RETURN"), method = "onChatMessage")
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
-        if (!ConstantStorage.isEnableChatBridge())return;
+        if (!Config.INSTANCE.isEnableChatBridge())return;
         String raw = packet.chatMessage();
         //System.out.println(raw);
         if (!raw.startsWith("/")) {

@@ -1,7 +1,5 @@
 pluginManagement {
     repositories {
-/*
-
 
         // 存放 fabricloomCN 的主仓库
         maven {
@@ -14,7 +12,7 @@ pluginManagement {
             name = 'Hanbing\'s proxy maven'
             url = 'https://repository.hanbings.io/proxy/'
         }
-*/
+
         // fabricloom 原版的仓库
         maven {
             name = 'Fabric'

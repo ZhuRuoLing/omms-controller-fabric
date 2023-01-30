@@ -10,8 +10,8 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class OmmsCommandOutput implements CommandOutput {
-    private static final String RCON_NAME = "OMMS";
-    private static final Text RCON_NAME_TEXT = Text.literal("OMMS");
+    private static final String NAME = "OMMS";
+    private static final Text NAME_TEXT = Text.literal("OMMS");
     private final StringBuffer buffer = new StringBuffer();
     private final MinecraftServer server;
 
@@ -29,7 +29,15 @@ public class OmmsCommandOutput implements CommandOutput {
 
     public ServerCommandSource createOmmsCommandSource() {
         ServerWorld serverWorld = this.server.getOverworld();
-        return new ServerCommandSource(this, Vec3d.of(serverWorld.getSpawnPos()), Vec2f.ZERO, serverWorld, 4, RCON_NAME, RCON_NAME_TEXT, this.server, (Entity)null);
+        return new ServerCommandSource(this,
+                Vec3d.of(serverWorld.getSpawnPos()),
+                Vec2f.ZERO,
+                serverWorld,
+                4,
+                NAME,
+                NAME_TEXT,
+                this.server,
+                null);
     }
 
     public void sendMessage(Text message) {

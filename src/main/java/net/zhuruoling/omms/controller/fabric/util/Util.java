@@ -4,13 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.logging.LogUtils;
-import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
-import net.zhuruoling.omms.controller.fabric.config.ConstantStorage;
+import net.zhuruoling.omms.controller.fabric.config.Config;
+import net.zhuruoling.omms.controller.fabric.config.RuntimeConstants;
 import net.zhuruoling.omms.controller.fabric.network.Broadcast;
 import net.zhuruoling.omms.controller.fabric.network.ControllerTypes;
 import net.zhuruoling.omms.controller.fabric.network.Status;
@@ -163,7 +163,7 @@ public class Util {
         Broadcast broadcast = new Broadcast(playerName, text);
         Gson gson = new GsonBuilder().serializeNulls().create();
         String data = gson.toJson(broadcast, Broadcast.class);
-        ConstantStorage.getSender().addToQueue(Util.TARGET_CHAT, data);
+        RuntimeConstants.getSender().addToQueue(Util.TARGET_CHAT, data);
     }
 
 
@@ -179,21 +179,17 @@ public class Util {
     }
     public static void sendStatus(MinecraftServer server){
         var status = new Status(
-                ConstantStorage.getControllerName(),
+                Config.INSTANCE.getControllerName(),
                 ControllerTypes.FABRIC,
                 server.getCurrentPlayerCount(),
                 server.getMaxPlayerCount(),
                 Arrays.asList(server.getPlayerNames())
         );
         try {
-            invokeHttpPostRequest("http://%s:%d/controller/status/upload".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort()), new GsonBuilder().serializeNulls().create().toJson(status));
+            invokeHttpPostRequest("http://%s:%d/controller/status/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()), new GsonBuilder().serializeNulls().create().toJson(status));
         }catch (Exception e){
             e.printStackTrace();
         }
-    }
-
-    public static boolean checkIsFakePlayer(String playerName) {
-        return playerName.startsWith(ConstantStorage.getAllowedFakePlayerPrefix()) || playerName.endsWith(ConstantStorage.getAllowedFakePlayerSuffix());
     }
 
     public static int getAnnouncementToPlayerFromUrl(CommandContext<ServerCommandSource> context, String url) {
@@ -226,19 +222,19 @@ public class Util {
     }
 
     public static void submitToExecutor(Runnable runnable){
-        synchronized (ConstantStorage.getExecutorService()){
-            if (ConstantStorage.getExecutorService().isShutdown()) {
+        synchronized (RuntimeConstants.getExecutorService()){
+            if (RuntimeConstants.getExecutorService().isShutdown()) {
                 LogUtils.getLogger().error("Executor service already stopped!");
                 return;
             }
-            ConstantStorage.getExecutorService().submit(runnable);
+            RuntimeConstants.getExecutorService().submit(runnable);
         }
     }
 
     public static void submitCommandLog(String cmd,String out){
         try {
-            invokeHttpPostRequest("http://%s:%d/controller/command/upload".formatted(ConstantStorage.getHttpQueryAddress(), ConstantStorage.getHttpQueryPort()),
-                    gson.toJson(new CommandOutputData(ConstantStorage.getControllerName(), cmd, out)));
+            invokeHttpPostRequest("http://%s:%d/controller/command/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()),
+                    gson.toJson(new CommandOutputData(Config.INSTANCE.getControllerName(), cmd, out)));
         }catch (Exception e){
             LogUtils.getLogger().error("Error occurred while updating command log.", e);
         }

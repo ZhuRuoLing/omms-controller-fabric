@@ -21,6 +21,8 @@
   ],
   "depends": {
     "fabricloader": ">=0.14.5",
-    "minecraft": ">=1.19"
+    "minecraft": ">=1.19",
+    "fabric-command-api-v2": "*",
+    "fabric-language-kotlin": "*"
   }
 }
