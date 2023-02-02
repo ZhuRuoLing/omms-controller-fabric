@@ -3,6 +3,8 @@ package net.zhuruoling.omms.controller.fabric.config;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,6 +13,7 @@ public class RuntimeConstants {
     private static UdpBroadcastSender sender;
     private static UdpReceiver chatReceiver;
     private static UdpReceiver instructionReceiver;
+    public static boolean shouldCrash = false;
 
     public static UdpReceiver getInstructionReceiver() {
         return instructionReceiver;
@@ -39,8 +42,5 @@ public class RuntimeConstants {
     public static ExecutorService getExecutorService() {
         return executorService;
     }
-
-
-
 
 }

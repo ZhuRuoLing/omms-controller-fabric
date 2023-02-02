@@ -3,11 +3,13 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.ClientConnection;
+import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.zhuruoling.omms.controller.fabric.config.Config;
+import net.zhuruoling.omms.controller.fabric.config.RuntimeConstants;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -34,6 +36,7 @@ public class ShowJoinMotdMixin {
             return;
         }
         try {
+            connection.send(new PlayerListHeaderS2CPacket(Text.empty(), Text.empty()));
             String playerName = player.getName().copyContentOnly().getString();
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), playerName);
             String result = invokeHttpGetRequest(url);

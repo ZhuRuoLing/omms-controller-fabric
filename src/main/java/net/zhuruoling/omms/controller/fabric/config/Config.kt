@@ -1,6 +1,8 @@
 package net.zhuruoling.omms.controller.fabric.config
 
 import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.text.MutableText
+import net.minecraft.text.Text
 import java.io.FileReader
 import java.nio.file.Files
 import java.util.*
@@ -20,6 +22,7 @@ usesWhitelist=my_whitelist
 channel=GLOBAL
 allowedFakePlayerPrefix=bot_
 allowedFakePlayerSuffix=_bot
+customFooter
 serverMappings"""
 
 
@@ -34,6 +37,7 @@ object Config {
     private var httpQueryPort = 0
     private var httpServerPort = 0
     private var chatChannel = ""
+    private var customFooter = ""
     private var serverMappings = hashMapOf<String, ServerMapping>()
 
 
@@ -57,6 +61,7 @@ object Config {
         httpQueryAddress = properties.get("httpQueryAddr", "localhost")
         httpQueryPort = properties.get("httpQueryPort", "50001").toInt()
         whitelistName = properties.get("usesWhitelist", "my_whitelist")
+        customFooter = properties.get("customFooter", "")
 
         val serverMappingNames: String = properties.get("serverMappings", "")
         if (serverMappingNames.contains(",")) {
@@ -100,6 +105,9 @@ object Config {
         }
     }
 
+    fun getCustomFooter(): MutableText {
+        return Text.literal(customFooter)
+    }
 
     fun isEnableChatBridge(): Boolean {
         return this.enableChatBridge

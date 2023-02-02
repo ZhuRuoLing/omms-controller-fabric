@@ -42,10 +42,7 @@ fun Application.module() {
 
 fun Application.configureAuthentication() {
     authentication {
-        form(name = "omms-simple-auth") {
-            challenge {
-                this.call.respond(HttpStatusCode.Unauthorized)
-            }
+        basic(name = "omms-simple-auth") {
             validate {
                 return@validate if ((getControllerName() == it.name) && (asSalted(getControllerName()) == it.password))
                     UserIdPrincipal(it.name + it.password)
