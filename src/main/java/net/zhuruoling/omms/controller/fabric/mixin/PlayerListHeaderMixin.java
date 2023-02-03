@@ -1,6 +1,5 @@
 package net.zhuruoling.omms.controller.fabric.mixin;
 
-import kotlin.collections.CollectionsKt;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
 import net.minecraft.text.Text;
@@ -15,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.List;
+
 @Mixin(PlayerListHeaderS2CPacket.class)
 public class PlayerListHeaderMixin {
     @Final
@@ -28,7 +29,7 @@ public class PlayerListHeaderMixin {
         if (footer.getString().isEmpty()){
             return Config.INSTANCE.getCustomFooter();
         }
-        return Texts.join(CollectionsKt.listOf(footer, Config.INSTANCE.getCustomFooter()), Text.empty());
+        return Texts.join(List.of(footer, Config.INSTANCE.getCustomFooter()), Text.literal("\n"));
     }
 
     @Inject(method = "<init>(Lnet/minecraft/network/PacketByteBuf;)V", at = @At("RETURN"))
@@ -36,7 +37,8 @@ public class PlayerListHeaderMixin {
         var footerText = footer.copy();
         if (footerText.getString().isEmpty()){
             this.footer = Config.INSTANCE.getCustomFooter();
+            return;
         }
-        this.footer = Texts.join(CollectionsKt.listOf(footerText, Config.INSTANCE.getCustomFooter()), Text.literal("\n"));
+        this.footer = Texts.join(List.of(footerText, Config.INSTANCE.getCustomFooter()), Text.literal("\n"));
     }
 }
