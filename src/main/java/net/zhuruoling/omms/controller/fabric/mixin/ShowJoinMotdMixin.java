@@ -9,7 +9,6 @@ import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.zhuruoling.omms.controller.fabric.config.Config;
-import net.zhuruoling.omms.controller.fabric.config.RuntimeConstants;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

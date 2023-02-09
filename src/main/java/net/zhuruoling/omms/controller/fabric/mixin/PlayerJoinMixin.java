@@ -57,6 +57,7 @@ public abstract class PlayerJoinMixin {
                 }
                 if (Arrays.stream(whitelists).toList().contains(Config.INSTANCE.getWhitelistName())) {
                     LOGGER.info("Successfully authed player %s".formatted(player));
+
                 } else {
                     LOGGER.info("Cannot auth player %s".formatted(player));
                     cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));

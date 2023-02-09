@@ -22,6 +22,7 @@ usesWhitelist=my_whitelist
 channel=GLOBAL
 allowedFakePlayerPrefix=bot_
 allowedFakePlayerSuffix=_bot
+trustedCentralServer=omms-central
 customFooter
 serverMappings"""
 
@@ -62,6 +63,7 @@ object Config {
         httpQueryPort = properties.get("httpQueryPort", "50001").toInt()
         whitelistName = properties.get("usesWhitelist", "my_whitelist")
         customFooter = properties.get("customFooter", "")
+        httpServerPort = properties.get("httpServerPort","50010").toInt()
 
         val serverMappingNames: String = properties.get("serverMappings", "")
         if (serverMappingNames.contains(",")) {

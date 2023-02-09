@@ -7,24 +7,20 @@ import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.dedicated.gui.PlayerListGui;
 import net.zhuruoling.omms.controller.fabric.command.AnnouncementCommand;
 import net.zhuruoling.omms.controller.fabric.command.MenuCommand;
 import net.zhuruoling.omms.controller.fabric.command.QQCommand;
 import net.zhuruoling.omms.controller.fabric.command.SendToConsoleCommand;
 import net.zhuruoling.omms.controller.fabric.config.Config;
-import net.zhuruoling.omms.controller.fabric.config.RuntimeConstants;
+import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
 import net.zhuruoling.omms.controller.fabric.network.*;
 import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
 import net.zhuruoling.omms.controller.fabric.util.OmmsCommandOutput;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.slf4j.Logger;
 
-import java.util.List;
 import java.util.Objects;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
@@ -33,15 +29,15 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
     private static void onServerStop() {
         if (Config.INSTANCE.isEnableRemoteControl() || Config.INSTANCE.isEnableChatBridge())
-            RuntimeConstants.getSender().setStopped(true);
+            SharedVariable.getSender().setStopped(true);
         if (Config.INSTANCE.isEnableChatBridge())
-            RuntimeConstants.getChatReceiver().interrupt();
+            SharedVariable.getChatReceiver().interrupt();
         if (Config.INSTANCE.isEnableRemoteControl()) {
-            RuntimeConstants.getInstructionReceiver().interrupt();
+            SharedVariable.getInstructionReceiver().interrupt();
             HttpServerMainKt.httpServer.stop(1000, 1000);
             HttpServerMainKt.httpServerThread.interrupt();
         }
-        RuntimeConstants.getExecutorService().shutdownNow();
+        SharedVariable.getExecutorService().shutdown();
     }
 
     @Override
@@ -63,7 +59,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("crashNow").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
-                RuntimeConstants.shouldCrash = (true);
+                SharedVariable.shouldCrash = (true);
                 return 0;
             }));
         });
@@ -71,6 +67,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStart);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> onServerStop());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> onServerStop());
+        SharedVariable.ready = true;
         logger.info("Hello World!");
     }
 
@@ -95,7 +92,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
             chatReceiver.setDaemon(true);
             chatReceiver.start();
-            RuntimeConstants.setChatReceiver(chatReceiver);
+            SharedVariable.setChatReceiver(chatReceiver);
         }
 
         if (Config.INSTANCE.isEnableRemoteControl()) {
@@ -109,14 +106,14 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             });
             instructionReceiver.setDaemon(true);
             instructionReceiver.start();
-            RuntimeConstants.setInstructionReceiver(instructionReceiver);
+            SharedVariable.setInstructionReceiver(instructionReceiver);
             HttpServerMainKt.httpServerThread = HttpServerMainKt.serverMain(Config.INSTANCE.getHttpServerPort(), server);
         }
         if (Config.INSTANCE.isEnableRemoteControl() || Config.INSTANCE.isEnableChatBridge()) {
             var sender = new UdpBroadcastSender();
             sender.setDaemon(true);
             sender.start();
-            RuntimeConstants.setSender(sender);
+            SharedVariable.setSender(sender);
         }
     }
 

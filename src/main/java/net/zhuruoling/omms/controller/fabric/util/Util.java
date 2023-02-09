@@ -10,7 +10,7 @@ import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
 import net.zhuruoling.omms.controller.fabric.config.Config;
-import net.zhuruoling.omms.controller.fabric.config.RuntimeConstants;
+import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
 import net.zhuruoling.omms.controller.fabric.network.Broadcast;
 import net.zhuruoling.omms.controller.fabric.network.ControllerTypes;
 import net.zhuruoling.omms.controller.fabric.network.Status;
@@ -163,7 +163,7 @@ public class Util {
         Broadcast broadcast = new Broadcast(playerName, text);
         Gson gson = new GsonBuilder().serializeNulls().create();
         String data = gson.toJson(broadcast, Broadcast.class);
-        RuntimeConstants.getSender().addToQueue(Util.TARGET_CHAT, data);
+        SharedVariable.getSender().addToQueue(Util.TARGET_CHAT, data);
     }
 
 
@@ -222,12 +222,12 @@ public class Util {
     }
 
     public static void submitToExecutor(Runnable runnable){
-        synchronized (RuntimeConstants.getExecutorService()){
-            if (RuntimeConstants.getExecutorService().isShutdown()) {
+        synchronized (SharedVariable.getExecutorService()){
+            if (SharedVariable.getExecutorService().isShutdown()) {
                 LogUtils.getLogger().error("Executor service already stopped!");
                 return;
             }
-            RuntimeConstants.getExecutorService().submit(runnable);
+            SharedVariable.getExecutorService().submit(runnable);
         }
     }
 
@@ -239,4 +239,17 @@ public class Util {
             LogUtils.getLogger().error("Error occurred while updating command log.", e);
         }
     }
+
+    public static void submitCrashReportUsingExecutor(String content){
+        submitToExecutor(() -> {
+            try {
+                invokeHttpPostRequest("http://%s:%d/controller/crashReport/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()),
+                        content);
+            }catch (Exception e){
+                LogUtils.getLogger().error("Error occurred while updating command log.", e);
+            }
+        });
+
+    }
+
 }

@@ -1,12 +1,14 @@
 package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.util.crash.CrashReport;
+import net.zhuruoling.omms.controller.fabric.config.Config;
+import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
+import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.nio.file.Files;
@@ -39,8 +41,6 @@ public abstract class CrashReportMixin {
         return stringBuilder.toString();
     }
 
-    @Shadow public abstract String asString();
-
     @Shadow
     private static String generateWittyComment() {
         return null;
@@ -56,14 +56,19 @@ public abstract class CrashReportMixin {
 
     @Inject(method = "asString", at=@At("RETURN"))
     void inj(CallbackInfoReturnable<String> cir){
+        if (!SharedVariable.ready)return;
+        System.out.println("Uploading crash report to OMMS Central Server.");
         var content = makeCrashReport();
-        Path path = Path.of("wdnmd.txt");
+        content = Config.INSTANCE.getControllerName() + "\n" + content;
+        Path path = Path.of("latestCrashReport.txt");
         try {
             Files.deleteIfExists(path);
             Files.createFile(path);
             Files.writeString(path, content);
+            Util.submitCrashReportUsingExecutor(content);
         }catch (Exception e){
             e.printStackTrace();
         }
     }
+
 }
