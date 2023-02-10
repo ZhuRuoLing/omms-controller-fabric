@@ -48,7 +48,7 @@ object Config {
             Files.createFile(configPath)
             Files.writeString(configPath, defaultConfig)
         }
-        val reader = FileReader(configPath.toFile())
+        val reader = FileReader(configPath.toFile(), java.nio.charset.Charset.forName("UTF-8"))
         val properties = Properties()
         properties.load(reader)
         reader.close()
@@ -63,7 +63,7 @@ object Config {
         httpQueryPort = properties.get("httpQueryPort", "50001").toInt()
         whitelistName = properties.get("usesWhitelist", "my_whitelist")
         customFooter = properties.get("customFooter", "")
-        httpServerPort = properties.get("httpServerPort","50010").toInt()
+        httpServerPort = properties.get("httpServerPort", "50010").toInt()
 
         val serverMappingNames: String = properties.get("serverMappings", "")
         if (serverMappingNames.contains(",")) {
@@ -108,6 +108,7 @@ object Config {
     }
 
     fun getCustomFooter(): MutableText {
+
         return Text.literal(customFooter)
     }
 

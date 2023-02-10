@@ -19,7 +19,19 @@ import java.time.format.DateTimeFormatter;
 @Mixin(CrashReport.class)
 public abstract class CrashReportMixin {
 
-    String makeCrashReport(){
+    @Shadow
+    @Final
+    private static DateTimeFormatter DATE_TIME_FORMATTER;
+    @Shadow
+    @Final
+    private String message;
+
+    @Shadow
+    private static String generateWittyComment() {
+        return null;
+    }
+
+    String makeCrashReport() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("---- Minecraft Crash Report ----\n");
         stringBuilder.append("// ");
@@ -42,21 +54,14 @@ public abstract class CrashReportMixin {
     }
 
     @Shadow
-    private static String generateWittyComment() {
-        return null;
-    }
+    public abstract String getCauseAsString();
 
-    @Shadow @Final private static DateTimeFormatter DATE_TIME_FORMATTER;
+    @Shadow
+    public abstract void addStackTrace(StringBuilder crashReportBuilder);
 
-    @Shadow @Final private String message;
-
-    @Shadow public abstract String getCauseAsString();
-
-    @Shadow public abstract void addStackTrace(StringBuilder crashReportBuilder);
-
-    @Inject(method = "asString", at=@At("RETURN"))
-    void inj(CallbackInfoReturnable<String> cir){
-        if (!SharedVariable.ready)return;
+    @Inject(method = "asString", at = @At("RETURN"))
+    void inj(CallbackInfoReturnable<String> cir) {
+        if (!SharedVariable.ready) return;
         System.out.println("Uploading crash report to OMMS Central Server.");
         var content = makeCrashReport();
         content = Config.INSTANCE.getControllerName() + "\n" + content;
@@ -66,7 +71,7 @@ public abstract class CrashReportMixin {
             Files.createFile(path);
             Files.writeString(path, content);
             Util.submitCrashReportUsingExecutor(content);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

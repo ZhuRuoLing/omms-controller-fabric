@@ -23,19 +23,19 @@ public class PlayerListHeaderMixin {
     @Shadow
     private Text footer;
 
-    @ModifyVariable(method = "<init>(Lnet/minecraft/text/Text;Lnet/minecraft/text/Text;)V", at = @At("HEAD"), index = 2,name = "footer", argsOnly = true)
-    private static Text modify(Text footer){
+    @ModifyVariable(method = "<init>(Lnet/minecraft/text/Text;Lnet/minecraft/text/Text;)V", at = @At("HEAD"), index = 2, name = "footer", argsOnly = true)
+    private static Text modify(Text footer) {
         System.out.println("Changing footer");
-        if (footer.getString().isEmpty()){
+        if (footer.getString().isEmpty()) {
             return Config.INSTANCE.getCustomFooter();
         }
         return Texts.join(List.of(footer, Config.INSTANCE.getCustomFooter()), Text.literal("\n"));
     }
 
     @Inject(method = "<init>(Lnet/minecraft/network/PacketByteBuf;)V", at = @At("RETURN"))
-    void modifyByBuf(PacketByteBuf buf, CallbackInfo ci){
+    void modifyByBuf(PacketByteBuf buf, CallbackInfo ci) {
         var footerText = footer.copy();
-        if (footerText.getString().isEmpty()){
+        if (footerText.getString().isEmpty()) {
             this.footer = Config.INSTANCE.getCustomFooter();
             return;
         }

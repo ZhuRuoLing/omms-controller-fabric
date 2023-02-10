@@ -2,7 +2,6 @@ package net.zhuruoling.omms.controller.fabric.network.http
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.ParseResults
-import com.mojang.logging.LogUtils
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -12,9 +11,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.command.ServerCommandSource
 import net.zhuruoling.omms.controller.fabric.config.Config.getControllerName
@@ -63,14 +60,14 @@ fun asSalted(original: String) = original + "WTF IS IT".encodeBase64()
 
 
 fun Application.configureRouting() {
-    val logger =LoggerFactory.getLogger("HttpRouting")
+    val logger = LoggerFactory.getLogger("HttpRouting")
     routing {
         get("/") {
             call.respondText(status = HttpStatusCode.OK) {
                 "PONG"
             }
         }
-        authenticate ("omms-simple-auth"){
+        authenticate("omms-simple-auth") {
             get("/status") {
                 logger.info("Querying status.")
                 val status = Status(
@@ -89,7 +86,7 @@ fun Application.configureRouting() {
                 logger.info("Got Command $command")
                 val countDownLatch = CountDownLatch(1)
                 var data: CommandOutputData? = null
-                minecraftServer.execute{
+                minecraftServer.execute {
                     val dispatcher: CommandDispatcher<ServerCommandSource> = minecraftServer.commandManager.dispatcher
                     val commandOutput = OmmsCommandOutput(minecraftServer)
                     val commandSource = commandOutput.createOmmsCommandSource()
@@ -100,7 +97,7 @@ fun Application.configureRouting() {
                     data = CommandOutputData(getControllerName(), command, commandResult)
                     countDownLatch.countDown()
                 }
-                runBlocking{
+                runBlocking {
                     countDownLatch.await()
                     call.respondText(ContentType.Text.Plain, status = HttpStatusCode.OK) {
                         Util.gson.toJson(data!!)

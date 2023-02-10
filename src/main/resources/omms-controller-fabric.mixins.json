@@ -6,10 +6,11 @@
   "server": [
     "CrashReportMixin",
     "PlayerChatMixin",
+    "PlayerDisconnectMixin",
     "PlayerJoinMixin",
+    "PlayerListHeaderMixin",
     "ServerMixin",
-    "ShowJoinMotdMixin",
-    "PlayerListHeaderMixin"
+    "ShowJoinMotdMixin"
   ],
   "injectors": {
     "defaultRequire": 1

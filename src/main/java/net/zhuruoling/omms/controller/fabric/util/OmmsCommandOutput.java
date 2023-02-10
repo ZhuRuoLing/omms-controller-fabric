@@ -1,6 +1,5 @@
 package net.zhuruoling.omms.controller.fabric.util;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;

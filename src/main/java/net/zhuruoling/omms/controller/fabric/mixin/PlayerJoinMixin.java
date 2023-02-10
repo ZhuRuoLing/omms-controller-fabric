@@ -3,10 +3,16 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.network.ClientConnection;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
+import net.minecraft.util.UserCache;
 import net.zhuruoling.omms.controller.fabric.config.Config;
+import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
+import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -14,11 +20,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
 
@@ -29,6 +37,9 @@ public abstract class PlayerJoinMixin {
     @Shadow
     @Final
     private static Logger LOGGER;
+    @Shadow
+    @Final
+    private MinecraftServer server;
 
     @Shadow
     @Nullable
@@ -71,5 +82,27 @@ public abstract class PlayerJoinMixin {
             var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
             cir.setReturnValue(text);
         }
+    }
+
+    @Inject(method = "onPlayerConnect", at = @At("RETURN"))
+    void sendPlayerJoinMsg(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
+        if (connection.getAddress() == null) {
+            return;
+        }
+        GameProfile gameProfile = player.getGameProfile();
+        UserCache userCache = this.server.getUserCache();
+        Optional<GameProfile> optionalGameProfile = userCache.getByUuid(gameProfile.getId());
+        String string = optionalGameProfile.map(GameProfile::getName).orElse(gameProfile.getName());
+        MutableText mutableText;
+        if (player.getGameProfile().getName().equalsIgnoreCase(string)) {
+            mutableText = Text.translatable("multiplayer.player.joined", player.getDisplayName());
+        } else {
+            mutableText = Text.translatable("multiplayer.player.joined.renamed", player.getDisplayName(), string);
+        }
+        SharedVariable.getSender().addToQueue(Util.TARGET_CHAT,
+                Util.gson.toJson(Util.toPlayerConnectionStateBroadcast(
+                        player.getName().getString(),
+                        mutableText
+                )));
     }
 }

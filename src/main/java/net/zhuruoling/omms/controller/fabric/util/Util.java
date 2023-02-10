@@ -110,7 +110,7 @@ public class Util {
         return Texts.join(texts, Text.empty());
     }
 
-    public static Text fromAnnouncement(Announcement announcement){
+    public static Text fromAnnouncement(Announcement announcement) {
         Style style = Style.EMPTY;
         String pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.FULL, FormatStyle.FULL, Chronology.ofLocale(Locale.getDefault()), Locale.getDefault());
         SimpleDateFormat format = new SimpleDateFormat(pattern);
@@ -125,9 +125,6 @@ public class Util {
         Text titleText = Text.of(announcement.getTitle() + "\n").copyContentOnly().setStyle(style.withColor(Formatting.GREEN).withBold(true));
         return Texts.join(List.of(titleText, timeText, contentText), Text.empty());
     }
-
-
-
 
 
     public static Text fromBroadcast(Broadcast broadcast) {
@@ -177,7 +174,8 @@ public class Util {
         }
         return stringBuffer.toString();
     }
-    public static void sendStatus(MinecraftServer server){
+
+    public static void sendStatus(MinecraftServer server) {
         var status = new Status(
                 Config.INSTANCE.getControllerName(),
                 ControllerTypes.FABRIC,
@@ -187,7 +185,7 @@ public class Util {
         );
         try {
             invokeHttpPostRequest("http://%s:%d/controller/status/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()), new GsonBuilder().serializeNulls().create().toJson(status));
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -215,14 +213,14 @@ public class Util {
                 context.getSource().sendFeedback(text, false);
                 return 0;
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return 0;
     }
 
-    public static void submitToExecutor(Runnable runnable){
-        synchronized (SharedVariable.getExecutorService()){
+    public static void submitToExecutor(Runnable runnable) {
+        synchronized (SharedVariable.getExecutorService()) {
             if (SharedVariable.getExecutorService().isShutdown()) {
                 LogUtils.getLogger().error("Executor service already stopped!");
                 return;
@@ -231,25 +229,33 @@ public class Util {
         }
     }
 
-    public static void submitCommandLog(String cmd,String out){
+    public static void submitCommandLog(String cmd, String out) {
         try {
             invokeHttpPostRequest("http://%s:%d/controller/command/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()),
                     gson.toJson(new CommandOutputData(Config.INSTANCE.getControllerName(), cmd, out)));
-        }catch (Exception e){
+        } catch (Exception e) {
             LogUtils.getLogger().error("Error occurred while updating command log.", e);
         }
     }
 
-    public static void submitCrashReportUsingExecutor(String content){
+    public static void submitCrashReportUsingExecutor(String content) {
         submitToExecutor(() -> {
             try {
                 invokeHttpPostRequest("http://%s:%d/controller/crashReport/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()),
                         content);
-            }catch (Exception e){
+            } catch (Exception e) {
                 LogUtils.getLogger().error("Error occurred while updating command log.", e);
             }
         });
+    }
 
+    public static Broadcast toPlayerConnectionStateBroadcast(String playerName, Text stateReason) {
+        return new Broadcast(Config.INSTANCE.getChatChannel(),
+                Config.INSTANCE.getControllerName(),
+                playerName,
+                stateReason.getString(),
+                Util.randomStringGen(16)
+        );
     }
 
 }

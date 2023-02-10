@@ -9,6 +9,21 @@ public class Status {
     int maxPlayerCount;
     List<String> players;
 
+    public Status(String name, ControllerTypes type, int playerCount, int maxPlayerCount, List<String> players) {
+        this.name = name;
+        this.type = type;
+        this.playerCount = playerCount;
+        this.maxPlayerCount = maxPlayerCount;
+        this.players = players;
+    }
+
+    public Status(ControllerTypes type, int playerCount, int maxPlayerCount, List<String> players) {
+        this.type = type;
+        this.playerCount = playerCount;
+        this.maxPlayerCount = maxPlayerCount;
+        this.players = players;
+    }
+
     public String getName() {
         return name;
     }
@@ -46,21 +61,6 @@ public class Status {
     }
 
     public void setPlayers(List<String> players) {
-        this.players = players;
-    }
-
-    public Status(String name, ControllerTypes type, int playerCount, int maxPlayerCount, List<String> players) {
-        this.name = name;
-        this.type = type;
-        this.playerCount = playerCount;
-        this.maxPlayerCount = maxPlayerCount;
-        this.players = players;
-    }
-
-    public Status(ControllerTypes type, int playerCount, int maxPlayerCount, List<String> players) {
-        this.type = type;
-        this.playerCount = playerCount;
-        this.maxPlayerCount = maxPlayerCount;
         this.players = players;
     }
 }

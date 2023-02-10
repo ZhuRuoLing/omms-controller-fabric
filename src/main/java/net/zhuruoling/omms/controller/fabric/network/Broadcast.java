@@ -4,11 +4,11 @@ import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 
 public class Broadcast {
+    public String id;
     String channel;
     String server;
     String player;
     String content;
-    public String id;
 
     public Broadcast(String player, String content) {
         this.server = Config.INSTANCE.getControllerName();
@@ -18,6 +18,13 @@ public class Broadcast {
         this.id = Util.randomStringGen(16);
     }
 
+    public Broadcast(String channel, String server, String player, String content, String id) {
+        this.channel = channel;
+        this.server = server;
+        this.player = player;
+        this.content = content;
+        this.id = id;
+    }
 
     public String getId() {
         return id;

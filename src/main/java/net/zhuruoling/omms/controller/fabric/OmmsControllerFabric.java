@@ -40,6 +40,10 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         SharedVariable.getExecutorService().shutdown();
     }
 
+    private static void registerMenuCommand() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
+    }
+
     @Override
     public void onInitializeServer() {
         Config.INSTANCE.load();
@@ -69,10 +73,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> onServerStop());
         SharedVariable.ready = true;
         logger.info("Hello World!");
-    }
-
-    private static void registerMenuCommand() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
     }
 
     private void onServerStart(MinecraftServer server) {

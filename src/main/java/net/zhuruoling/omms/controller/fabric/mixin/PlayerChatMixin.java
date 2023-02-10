@@ -19,7 +19,7 @@ public class PlayerChatMixin {
 
     @Inject(at = @At("RETURN"), method = "onChatMessage")
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
-        if (!Config.INSTANCE.isEnableChatBridge())return;
+        if (!Config.INSTANCE.isEnableChatBridge()) return;
         String raw = packet.chatMessage();
         //System.out.println(raw);
         if (!raw.startsWith("/")) {

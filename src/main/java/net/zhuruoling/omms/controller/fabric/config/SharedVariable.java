@@ -8,12 +8,11 @@ import java.util.concurrent.Executors;
 
 public class SharedVariable {
     private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    public static boolean shouldCrash = false;
+    public static boolean ready = false;
     private static UdpBroadcastSender sender;
     private static UdpReceiver chatReceiver;
     private static UdpReceiver instructionReceiver;
-    public static boolean shouldCrash = false;
-
-    public static boolean ready = false;
 
     public static UdpReceiver getInstructionReceiver() {
         return instructionReceiver;

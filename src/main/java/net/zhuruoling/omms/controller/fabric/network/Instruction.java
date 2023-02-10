@@ -9,19 +9,7 @@ public class Instruction {
     String commandString;
     InstructionType type;
 
-    public InstructionType getType() {
-        return type;
-    }
-
-    public void setType(InstructionType type) {
-        this.type = type;
-    }
-
-    public boolean matches(ControllerTypes types, String targetControllerName){
-        return this.controllerType.equals(types) && this.targetControllerName.equals(targetControllerName);
-    }
-
-    public Instruction(){
+    public Instruction() {
         controllerType = ControllerTypes.MCDR;
         targetControllerName = "";
         commandString = "";
@@ -40,12 +28,24 @@ public class Instruction {
         this.commandString = commandString;
     }
 
-    public static String  asJsonString(Instruction instruction){
+    public static String asJsonString(Instruction instruction) {
         return new GsonBuilder().serializeNulls().create().toJson(instruction, Instruction.class);
     }
 
-    public static Instruction fromJsonString(String json){
+    public static Instruction fromJsonString(String json) {
         return new GsonBuilder().serializeNulls().create().fromJson(json, Instruction.class);
+    }
+
+    public InstructionType getType() {
+        return type;
+    }
+
+    public void setType(InstructionType type) {
+        this.type = type;
+    }
+
+    public boolean matches(ControllerTypes types, String targetControllerName) {
+        return this.controllerType.equals(types) && this.targetControllerName.equals(targetControllerName);
     }
 
     public ControllerTypes getControllerType() {

@@ -13,11 +13,12 @@ import java.util.function.BooleanSupplier;
 
 @Mixin(MinecraftServer.class)
 public class ServerMixin {
-    @Shadow private PlayerManager playerManager;
+    @Shadow
+    private PlayerManager playerManager;
 
     @Inject(method = "tick", at = @At("HEAD"))
-    void tickInject(BooleanSupplier shouldKeepTicking, CallbackInfo ci){
-        if(SharedVariable.shouldCrash){
+    void tickInject(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
+        if (SharedVariable.shouldCrash) {
             throw new Error("I`m Crashing!");
         }
     }

@@ -2,7 +2,6 @@ package net.zhuruoling.omms.controller.fabric.command;
 
 import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.NbtCompoundArgumentType;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.command.ServerCommandSource;
@@ -18,7 +17,7 @@ import java.util.Objects;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
-public class MenuCommand extends Command<ServerCommandSource>{
+public class MenuCommand extends Command<ServerCommandSource> {
 
     @Override
     public void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {

@@ -1,6 +1,7 @@
 package net.zhuruoling.omms.controller.fabric.announcement;
 
 import com.google.gson.GsonBuilder;
+
 import java.util.Arrays;
 
 public class Announcement {
@@ -64,7 +65,8 @@ public class Announcement {
                 ", content=" + Arrays.toString(content) +
                 '}';
     }
-    public String toJson(){
+
+    public String toJson() {
         return new GsonBuilder().serializeNulls().create().toJson(this);
     }
 

@@ -10,12 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
 
 
-public class UdpReceiver extends Thread{
+public class UdpReceiver extends Thread {
     private static final Logger logger = LoggerFactory.getLogger("UdpBroadcastReceiver");
+    private final MinecraftServer server;
     BiConsumer<MinecraftServer, String> function = null;
     UdpBroadcastSender.Target target = null;
-    private final MinecraftServer server;
-    public UdpReceiver(MinecraftServer server, UdpBroadcastSender.Target target, BiConsumer<MinecraftServer, String> function){
+
+    public UdpReceiver(MinecraftServer server, UdpBroadcastSender.Target target, BiConsumer<MinecraftServer, String> function) {
         this.setName("UdpBroadcastReceiver#" + getId());
         this.server = server;
         this.function = function;
@@ -32,21 +33,19 @@ public class UdpReceiver extends Thread{
             inetAddress = InetAddress.getByName(address);
             socket = new MulticastSocket(port);
             logger.info("Started Broadcast Receiver at " + address + ":" + port);
-            socket.joinGroup(new InetSocketAddress(inetAddress,port), NetworkInterface.getByInetAddress(inetAddress));
-            for (;;) {
+            socket.joinGroup(new InetSocketAddress(inetAddress, port), NetworkInterface.getByInetAddress(inetAddress));
+            for (; ; ) {
                 try {
                     DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
                     socket.receive(packet);
                     String msg = new String(packet.getData(), packet.getOffset(),
                             packet.getLength(), StandardCharsets.UTF_8);
-                    function.accept(this.server,msg);
-                }
-                catch (Exception e){
+                    function.accept(this.server, msg);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
