@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.command.ServerCommandSource
 import net.zhuruoling.omms.controller.fabric.config.Config.getControllerName
+import net.zhuruoling.omms.controller.fabric.config.SharedVariable
 import net.zhuruoling.omms.controller.fabric.network.ControllerTypes
 import net.zhuruoling.omms.controller.fabric.network.Status
 import net.zhuruoling.omms.controller.fabric.util.CommandOutputData
@@ -65,6 +66,11 @@ fun Application.configureRouting() {
         get("/") {
             call.respondText(status = HttpStatusCode.OK) {
                 "PONG"
+            }
+        }
+        get("/log") {
+            call.respondText (status = HttpStatusCode.OK){
+                "${System.currentTimeMillis()}\n" + SharedVariable.logUpdateThread.logCache.joinToString(separator = "\n")
             }
         }
         authenticate("omms-simple-auth") {

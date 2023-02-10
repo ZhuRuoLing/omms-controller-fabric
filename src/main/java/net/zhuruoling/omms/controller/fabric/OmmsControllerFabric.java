@@ -1,41 +1,55 @@
 package net.zhuruoling.omms.controller.fabric;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.logging.LogQueues;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.command.EntitySelector;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
+import net.minecraft.util.Formatting;
+import net.minecraft.world.explosion.Explosion;
 import net.zhuruoling.omms.controller.fabric.command.AnnouncementCommand;
 import net.zhuruoling.omms.controller.fabric.command.MenuCommand;
 import net.zhuruoling.omms.controller.fabric.command.QQCommand;
 import net.zhuruoling.omms.controller.fabric.command.SendToConsoleCommand;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
-import net.zhuruoling.omms.controller.fabric.network.*;
+import net.zhuruoling.omms.controller.fabric.network.Broadcast;
+import net.zhuruoling.omms.controller.fabric.network.Instruction;
+import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
+import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
 import net.zhuruoling.omms.controller.fabric.util.OmmsCommandOutput;
 import net.zhuruoling.omms.controller.fabric.util.Util;
-import org.slf4j.Logger;
+import net.zhuruoling.omms.controller.fabric.util.logging.LogUpdateThread;
 
 import java.util.Objects;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
-    private final Logger logger = LogUtils.getLogger();
+    //private final Logger logger = LogUtils.getLogger();
 
-    private static void onServerStop() {
+    private static void onServerStop(MinecraftServer minecraftServer) {
         if (Config.INSTANCE.isEnableRemoteControl() || Config.INSTANCE.isEnableChatBridge())
             SharedVariable.getSender().setStopped(true);
         if (Config.INSTANCE.isEnableChatBridge())
             SharedVariable.getChatReceiver().interrupt();
         if (Config.INSTANCE.isEnableRemoteControl()) {
-            SharedVariable.getInstructionReceiver().interrupt();
             HttpServerMainKt.httpServer.stop(1000, 1000);
             HttpServerMainKt.httpServerThread.interrupt();
+            SharedVariable.logUpdateThread.interrupt();
         }
         SharedVariable.getExecutorService().shutdown();
     }
@@ -47,12 +61,15 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     @Override
     public void onInitializeServer() {
         Config.INSTANCE.load();
+
         if (Config.INSTANCE.isEnableJoinMotd()) {
             registerMenuCommand();
         }
 
         if (Config.INSTANCE.isEnableRemoteControl()) {
             CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new SendToConsoleCommand().register(dispatcher));
+            SharedVariable.logUpdateThread = new LogUpdateThread();
+            SharedVariable.logUpdateThread.start();
         }
 
         CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> new AnnouncementCommand().register(dispatcher)));
@@ -68,11 +85,42 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             }));
         });
 
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("omms-reload").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
+                Config.INSTANCE.load();
+                HttpServerMainKt.httpServer.stop(1, 1);
+                HttpServerMainKt.httpServerThread.interrupt();
+                HttpServerMainKt.httpServerThread = HttpServerMainKt.serverMain(Config.INSTANCE.getHttpServerPort(), context.getSource().getServer());
+                context.getSource().sendFeedback(Text.of("Config reloaded.").copyContentOnly().setStyle(Style.EMPTY.withColor(TextColor.fromFormatting(Formatting.AQUA))), true);
+                return 0;
+            }));
+        });
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("boom")
+                .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+                .then(RequiredArgumentBuilder.<ServerCommandSource, EntitySelector>argument("entities", EntityArgumentType.entities())
+                        .then(RequiredArgumentBuilder.<ServerCommandSource, Float>argument("power", FloatArgumentType.floatArg(0)).executes(context -> {
+                                    var world = context.getSource().getWorld();
+                                    var entities = EntityArgumentType.getEntities(context, "entities");
+                                    entities.forEach(e -> world.createExplosion(e,
+                                            DamageSource.explosion((LivingEntity) e),
+                                            null,
+                                            e.getX(),
+                                            e.getY(),
+                                            e.getZ(),
+                                            FloatArgumentType.getFloat(context, "power"),
+                                            false,
+                                            Explosion.DestructionType.BREAK
+                                    ));
+                                    return 0;
+                                })
+                        ))));
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStart);
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> onServerStop());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> onServerStop());
+        ServerLifecycleEvents.SERVER_STOPPING.register(OmmsControllerFabric::onServerStop);
+        ServerLifecycleEvents.SERVER_STOPPED.register(OmmsControllerFabric::onServerStop);
         SharedVariable.ready = true;
-        logger.info("Hello World!");
+
+        LogUtils.getLogger().info("Hello World!");
     }
 
     private void onServerStart(MinecraftServer server) {
@@ -96,17 +144,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         }
 
         if (Config.INSTANCE.isEnableRemoteControl()) {
-            var instructionReceiver = new UdpReceiver(server, Util.TARGET_CONTROL, (s, m) -> {
-                Gson gson = new GsonBuilder().serializeNulls().create();
-                Instruction instruction = gson.fromJson(m, Instruction.class);
-                if (instruction.getControllerType() != ControllerTypes.FABRIC) {
-                    return;
-                }
-                runCommand(s, instruction);
-            });
-            instructionReceiver.setDaemon(true);
-            instructionReceiver.start();
-            SharedVariable.setInstructionReceiver(instructionReceiver);
             HttpServerMainKt.httpServerThread = HttpServerMainKt.serverMain(Config.INSTANCE.getHttpServerPort(), server);
         }
         if (Config.INSTANCE.isEnableRemoteControl() || Config.INSTANCE.isEnableChatBridge()) {
@@ -117,27 +154,5 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         }
     }
 
-    private void runCommand(MinecraftServer server, Instruction instruction) {
-        switch (instruction.getType()) {
-            case UPLOAD_STATUS -> {
-                logger.info("Sending status.");
-                Util.sendStatus(server);
-            }
-            case RUN_COMMAND -> {
-                if (!Objects.equals(instruction.getTargetControllerName(), Config.INSTANCE.getControllerName()))
-                    return;
-                logger.info("Received Command: %s".formatted(instruction.getCommandString()));
-                server.execute(() -> {
-                    var dispatcher = server.getCommandManager().getDispatcher();
-                    var commandOutput = new OmmsCommandOutput(server);
-                    var commandSource = commandOutput.createOmmsCommandSource();
-                    var results = dispatcher.parse(instruction.getCommandString(), commandSource);
-                    server.getCommandManager().execute(results, instruction.getCommandString());
-                    var commandResult = commandOutput.asString();
-                    Util.submitToExecutor(() -> Util.submitCommandLog(instruction.getCommandString(), commandResult));
-                });
-            }
-        }
-    }
 
 }
