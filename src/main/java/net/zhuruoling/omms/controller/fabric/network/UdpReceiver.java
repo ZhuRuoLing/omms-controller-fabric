@@ -33,7 +33,7 @@ public class UdpReceiver extends Thread {
             inetAddress = InetAddress.getByName(address);
             socket = new MulticastSocket(port);
             logger.info("Started Broadcast Receiver at " + address + ":" + port);
-            socket.joinGroup(new InetSocketAddress(inetAddress, port), NetworkInterface.getByInetAddress(inetAddress));
+            socket.joinGroup(new InetSocketAddress(inetAddress, port), null);
             for (; ; ) {
                 try {
                     DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
@@ -44,7 +44,9 @@ public class UdpReceiver extends Thread {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }

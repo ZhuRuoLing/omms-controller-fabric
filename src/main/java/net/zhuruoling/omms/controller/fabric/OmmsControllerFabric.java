@@ -1,39 +1,37 @@
 package net.zhuruoling.omms.controller.fabric;
 
 import com.google.gson.Gson;
-import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.logging.LogQueues;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.command.EntitySelector;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
-import net.minecraft.world.explosion.Explosion;
 import net.zhuruoling.omms.controller.fabric.command.AnnouncementCommand;
 import net.zhuruoling.omms.controller.fabric.command.MenuCommand;
 import net.zhuruoling.omms.controller.fabric.command.QQCommand;
 import net.zhuruoling.omms.controller.fabric.command.SendToConsoleCommand;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
+import net.zhuruoling.omms.controller.fabric.gui.GuiUtil;
 import net.zhuruoling.omms.controller.fabric.network.Broadcast;
-import net.zhuruoling.omms.controller.fabric.network.Instruction;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
-import net.zhuruoling.omms.controller.fabric.util.OmmsCommandOutput;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 import net.zhuruoling.omms.controller.fabric.util.logging.LogUpdateThread;
+import net.zhuruoling.omms.controller.fabric.util.logging.MemoryAppender;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.filter.LevelRangeFilter;
 
 import java.util.Objects;
 
@@ -62,6 +60,16 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     public void onInitializeServer() {
         Config.INSTANCE.load();
 
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
+        MemoryAppender appender = MemoryAppender.newAppender("mem");
+        appender.start();
+        var filter = LevelRangeFilter.createFilter(Level.INFO, Level.FATAL, Filter.Result.ACCEPT, Filter.Result.DENY);
+        config.addAppender(appender);
+        config.getLoggerConfig("Root").addAppender(appender, Level.ALL, filter);
+        ctx.updateLoggers();
+
+
         if (Config.INSTANCE.isEnableJoinMotd()) {
             registerMenuCommand();
         }
@@ -86,6 +94,19 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("showGui").requires(serverCommandSource -> false).executes(context -> {
+                try {
+                    GuiUtil.show(Objects.requireNonNull(context.getSource().getPlayer()));
+                } catch (Exception e) {
+                    context.getSource().sendError(Text.of(e.toString()));
+                    context.getSource().sendError(Text.of(ExceptionUtils.getStackTrace(e)));
+                    e.printStackTrace();
+                }
+                return 0;
+            }));
+        });
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("omms-reload").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
                 Config.INSTANCE.load();
                 HttpServerMainKt.httpServer.stop(1, 1);
@@ -96,25 +117,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             }));
         });
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("boom")
-                .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
-                .then(RequiredArgumentBuilder.<ServerCommandSource, EntitySelector>argument("entities", EntityArgumentType.entities())
-                        .then(RequiredArgumentBuilder.<ServerCommandSource, Float>argument("power", FloatArgumentType.floatArg(0)).executes(context -> {
-                                    var world = context.getSource().getWorld();
-                                    var entities = EntityArgumentType.getEntities(context, "entities");
-                                    entities.forEach(e -> world.createExplosion(e,
-                                            DamageSource.explosion((LivingEntity) e),
-                                            null,
-                                            e.getX(),
-                                            e.getY(),
-                                            e.getZ(),
-                                            FloatArgumentType.getFloat(context, "power"),
-                                            false,
-                                            Explosion.DestructionType.BREAK
-                                    ));
-                                    return 0;
-                                })
-                        ))));
         ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStart);
         ServerLifecycleEvents.SERVER_STOPPING.register(OmmsControllerFabric::onServerStop);
         ServerLifecycleEvents.SERVER_STOPPED.register(OmmsControllerFabric::onServerStop);
@@ -128,7 +130,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
                 var broadcast = new Gson().fromJson(m, Broadcast.class);
                 if (!(Objects.equals(broadcast.getChannel(), Config.INSTANCE.getChatChannel()))) return;
-                //logger.info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
+                //LogUtils.getLogger().info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
                 if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
                     server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
                     return;

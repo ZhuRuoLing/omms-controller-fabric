@@ -32,7 +32,7 @@ public class ShowJoinMotdMixin {
     private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
         if (!Config.INSTANCE.isEnableJoinMotd()) return;
         if (connection.getAddress() == null) {
-            return;
+           return;
         }
         try {
             connection.send(new PlayerListHeaderS2CPacket(Text.empty(), Text.empty()));

@@ -20,8 +20,6 @@ httpServerPort=50010
 controllerName=omms-controller
 usesWhitelist=my_whitelist
 channel=GLOBAL
-allowedFakePlayerPrefix=bot_
-allowedFakePlayerSuffix=_bot
 trustedCentralServer=omms-central
 customFooter
 serverMappings"""

@@ -4,8 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.logging.LogUtils;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.stat.Stat;
+import net.minecraft.stat.StatType;
+import net.minecraft.stat.Stats;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
@@ -258,4 +264,9 @@ public class Util {
         );
     }
 
+    public static void getStat(ServerPlayerEntity player){
+        player.getStatHandler().updateStatSet();
+        player.getStatHandler().save();
+        player.getStatHandler().getStat(Stats.MINED, Blocks.STONE);
+    }
 }

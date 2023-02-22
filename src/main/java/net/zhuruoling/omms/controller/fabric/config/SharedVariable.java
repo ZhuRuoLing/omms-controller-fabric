@@ -17,15 +17,6 @@ public class SharedVariable {
     public static LogUpdateThread logUpdateThread;
     private static UdpBroadcastSender sender;
     private static UdpReceiver chatReceiver;
-    private static UdpReceiver instructionReceiver;
-
-    public static UdpReceiver getInstructionReceiver() {
-        return instructionReceiver;
-    }
-
-    public static void setInstructionReceiver(UdpReceiver instructionReceiver) {
-        SharedVariable.instructionReceiver = instructionReceiver;
-    }
 
     public static UdpBroadcastSender getSender() {
         return sender;

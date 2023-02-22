@@ -26,8 +26,8 @@ public class MemoryAppender extends AbstractAppender {
         SharedVariable.logCache.add(s);
     }
 
-    public static MemoryAppender newAppender(){
-        return new MemoryAppender("MemAppender",
+    public static MemoryAppender newAppender(String name){
+        return new MemoryAppender(name,
                 LevelRangeFilter.createFilter(Level.INFO, Level.FATAL, Filter.Result.ACCEPT, Filter.Result.DENY),
                 PatternLayout.newBuilder().withPattern("[%d{HH:mm:ss}] [%t/%level]: %msg{nolookups}%n").build(),
                 false,

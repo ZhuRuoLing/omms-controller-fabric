@@ -5,8 +5,8 @@ import com.mojang.brigadier.ParseResults
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.cio.*
 import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -32,8 +32,13 @@ private lateinit var minecraftServer: MinecraftServer
 fun serverMain(port: Int, server: MinecraftServer): Thread {
     minecraftServer = server
     val thread = thread(false, name = "Ktor Server Thread") {
-        httpServer = embeddedServer(Netty, port = port, host = "0.0.0.0", module = Application::module)
-        httpServer.start(wait = true)
+        try{
+            httpServer = embeddedServer(CIO, port = port, host = "0.0.0.0", module = Application::module)
+            httpServer.start(wait = true)
+        }catch (e:Exception){
+            if (e !is InterruptedException)
+                e.printStackTrace()
+        }
     }
     thread.start()
     return thread
@@ -68,12 +73,18 @@ fun Application.configureRouting() {
                 "PONG"
             }
         }
-        get("/log") {
-            call.respondText (status = HttpStatusCode.OK){
-                "${System.currentTimeMillis()}\n" + SharedVariable.logUpdateThread.logCache.joinToString(separator = "\n")
+
+        get("/log2") {
+            call.respondText(status = HttpStatusCode.OK) {
+                "${System.currentTimeMillis()}\n" + SharedVariable.logCache.joinToString(separator = "\n")
             }
         }
         authenticate("omms-simple-auth") {
+            get("/log") {
+                call.respondText(status = HttpStatusCode.OK) {
+                    "${System.currentTimeMillis()}\n" + SharedVariable.logUpdateThread.logCache.joinToString(separator = "\n")
+                }
+            }
             get("/status") {
                 logger.info("Querying status.")
                 val status = Status(

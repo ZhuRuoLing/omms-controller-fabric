@@ -26,10 +26,4 @@ public class PlayerChatMixin {
             Util.sendChatBroadcast(raw, this.player.getName().getString());
         }
     }
-    /*
-    [14:44:54] [Netty Server IO #2/INFO]: [STDOUT]: 囸你仙人
-[14:44:54] [Server thread/INFO]: [Not Secure] <ZhuRuoLing> 囸你仙人
-[14:44:54] [UdpBroadcastReceiver#71/INFO]: GLOBAL <ZhuRuoLing[omms-controller]> 囸你仙人
-[14:44:54] [UdpBroadcastReceiver#71/INFO]: GLOBAL <ZhuRuoLing[omms-controller]> 囸你仙人
-     */
 }

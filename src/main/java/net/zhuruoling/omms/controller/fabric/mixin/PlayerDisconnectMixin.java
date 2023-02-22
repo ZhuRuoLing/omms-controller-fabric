@@ -21,9 +21,7 @@ public abstract class PlayerDisconnectMixin {
 
     @Inject(method = "onDisconnected", at = @At("HEAD"))
     void onPlayerDisconnect(Text reason, CallbackInfo ci) {
-
         String s = reason.getString();
-
         SharedVariable.getSender().addToQueue(Util.TARGET_CHAT,
                 Util.gson.toJson(Util.toPlayerConnectionStateBroadcast(
                         this.getPlayer().getName().getString(),
