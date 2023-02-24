@@ -2,6 +2,7 @@ package net.zhuruoling.omms.controller.fabric.config;
 
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
+import net.zhuruoling.omms.controller.fabric.util.Util;
 import net.zhuruoling.omms.controller.fabric.util.logging.LogUpdateThread;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ public class SharedVariable {
     private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
     public static boolean shouldCrash = false;
     public static boolean ready = false;
+    public static String sessionId = Util.randomStringGen(16);
     public static final ArrayList<String> logCache = new ArrayList<>();
     public static LogUpdateThread logUpdateThread;
     private static UdpBroadcastSender sender;
@@ -37,5 +39,4 @@ public class SharedVariable {
     public static ExecutorService getExecutorService() {
         return executorService;
     }
-
 }

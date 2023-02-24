@@ -129,6 +129,7 @@ public class Util {
         }
         Text contentText = Text.of(builder.toString()).copyContentOnly();
         Text titleText = Text.of(announcement.getTitle() + "\n").copyContentOnly().setStyle(style.withColor(Formatting.GREEN).withBold(true));
+
         return Texts.join(List.of(titleText, timeText, contentText), Text.empty());
     }
 
@@ -264,9 +265,4 @@ public class Util {
         );
     }
 
-    public static void getStat(ServerPlayerEntity player){
-        player.getStatHandler().updateStatSet();
-        player.getStatHandler().save();
-        player.getStatHandler().getStat(Stats.MINED, Blocks.STONE);
-    }
 }
