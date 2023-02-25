@@ -18,20 +18,11 @@ import net.zhuruoling.omms.controller.fabric.command.QQCommand;
 import net.zhuruoling.omms.controller.fabric.command.SendToConsoleCommand;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
-import net.zhuruoling.omms.controller.fabric.gui.GuiUtil;
 import net.zhuruoling.omms.controller.fabric.network.Broadcast;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
 import net.zhuruoling.omms.controller.fabric.util.Util;
-import net.zhuruoling.omms.controller.fabric.util.logging.LogUpdateThread;
-import net.zhuruoling.omms.controller.fabric.util.logging.MemoryAppender;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.filter.LevelRangeFilter;
 
 import java.util.Objects;
 
@@ -47,7 +38,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         if (Config.INSTANCE.isEnableRemoteControl()) {
             HttpServerMainKt.httpServer.stop(1000, 1000);
             HttpServerMainKt.httpServerThread.interrupt();
-            SharedVariable.logUpdateThread.interrupt();
+            HttpServerMainKt.sendToAllConnection("\u1145:END:\u1919");
         }
         SharedVariable.getExecutorService().shutdown();
     }
@@ -60,24 +51,13 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     public void onInitializeServer() {
         Config.INSTANCE.load();
 
-        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        final org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
-        MemoryAppender appender = MemoryAppender.newAppender("mem");
-        appender.start();
-        var filter = LevelRangeFilter.createFilter(Level.INFO, Level.FATAL, Filter.Result.ACCEPT, Filter.Result.DENY);
-        config.addAppender(appender);
-        config.getLoggerConfig("Root").addAppender(appender, Level.ALL, filter);
-        ctx.updateLoggers();
-
-
         if (Config.INSTANCE.isEnableJoinMotd()) {
             registerMenuCommand();
         }
 
         if (Config.INSTANCE.isEnableRemoteControl()) {
             CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new SendToConsoleCommand().register(dispatcher));
-            SharedVariable.logUpdateThread = new LogUpdateThread();
-            SharedVariable.logUpdateThread.start();
+            Util.addAppender();
         }
 
         CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> new AnnouncementCommand().register(dispatcher)));
@@ -89,19 +69,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("crashNow").requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4)).executes(context -> {
                 SharedVariable.shouldCrash = (true);
-                return 0;
-            }));
-        });
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("showGui").requires(serverCommandSource -> false).executes(context -> {
-                try {
-                    GuiUtil.show(Objects.requireNonNull(context.getSource().getPlayer()));
-                } catch (Exception e) {
-                    context.getSource().sendError(Text.of(e.toString()));
-                    context.getSource().sendError(Text.of(ExceptionUtils.getStackTrace(e)));
-                    e.printStackTrace();
-                }
                 return 0;
             }));
         });

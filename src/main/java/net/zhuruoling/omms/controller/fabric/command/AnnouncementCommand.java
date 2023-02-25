@@ -17,7 +17,7 @@ import java.util.Objects;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 
-public class AnnouncementCommand extends Command<ServerCommandSource> {
+public class AnnouncementCommand implements Command<ServerCommandSource> {
     @Override
     public void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {
         commandDispatcher.register(

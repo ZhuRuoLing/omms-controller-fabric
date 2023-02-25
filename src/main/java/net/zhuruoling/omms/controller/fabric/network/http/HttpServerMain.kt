@@ -97,12 +97,12 @@ fun sendToAllConnection(string: String) {
 fun Application.configureRouting() {
     val logger = LoggerFactory.getLogger("HttpRouting")
     routing {
-        webSocket("/console") {
+        webSocket("/") {
             logger.info("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
             connectionList += this
-            synchronized(SharedVariable.logUpdateThread.logCache) {
+            synchronized(SharedVariable.logCache) {
                 runBlocking {
-                    SharedVariable.logUpdateThread.logCache.forEach {
+                    SharedVariable.logCache.forEach {
                         send(it)
                     }
                 }
@@ -113,6 +113,7 @@ fun Application.configureRouting() {
                     val received = frame.readText()
                     minecraftServer.execute {
                         try {
+                            logger.info("Command $received from console ${Integer.toHexString(this.hashCode())}")
                             minecraftServer.commandManager.dispatcher.execute(received, minecraftServer.commandSource)
                         } catch (e: Exception) {
                             if (e is CommandSyntaxException) {
@@ -134,18 +135,12 @@ fun Application.configureRouting() {
             }
         }
 
-        get("/log2") {
+        get("/log") {
             call.respondText(status = HttpStatusCode.OK) {
                 "${System.currentTimeMillis()}\n" + SharedVariable.logCache.joinToString(separator = "\n")
             }
         }
-        get("/log") {
-            call.respondText(status = HttpStatusCode.OK) {
-                "${System.currentTimeMillis()}\n" + SharedVariable.logUpdateThread.logCache.joinToString(separator = "\n")
-            }
-        }
         authenticate("omms-simple-auth") {
-
             get("/status") {
                 logger.info("Querying status.")
                 val status = Status(

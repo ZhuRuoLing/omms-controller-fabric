@@ -1,7 +1,7 @@
 package net.zhuruoling.omms.controller.fabric.util.logging;
 
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
-import net.zhuruoling.omms.controller.fabric.util.Util;
+import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
@@ -22,14 +22,21 @@ public class MemoryAppender extends AbstractAppender {
     @Override
     public void append(LogEvent event) {
         String s = getLayout().toSerializable(event).toString();
+        s = s.substring(0, s.length()-2);
         //Util.sendChatBroadcast(s, "logger");
-        SharedVariable.logCache.add(s);
+        synchronized (SharedVariable.logCache){
+            SharedVariable.logCache.add(s);
+        }
+        String finalS = s;
+        if (!(SharedVariable.getExecutorService().isTerminated() || SharedVariable.getExecutorService().isShutdown())){
+            SharedVariable.getExecutorService().submit(() -> HttpServerMainKt.sendToAllConnection(finalS));
+        }
     }
 
     public static MemoryAppender newAppender(String name){
         return new MemoryAppender(name,
-                LevelRangeFilter.createFilter(Level.INFO, Level.FATAL, Filter.Result.ACCEPT, Filter.Result.DENY),
-                PatternLayout.newBuilder().withPattern("[%d{HH:mm:ss}] [%t/%level]: %msg{nolookups}%n").build(),
+                LevelRangeFilter.createFilter(Level.FATAL, Level.INFO, Filter.Result.ACCEPT, Filter.Result.DENY),
+                PatternLayout.newBuilder().withPattern("[%d{HH:mm:ss}] [%t/%level] %msg{nolookups}%n").build(),
                 false,
                 null
                 );

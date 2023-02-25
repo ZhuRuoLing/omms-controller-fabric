@@ -17,7 +17,7 @@ import java.util.Objects;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
-public class MenuCommand extends Command<ServerCommandSource> {
+public class MenuCommand implements Command<ServerCommandSource> {
 
     @Override
     public void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {

@@ -7,7 +7,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import net.minecraft.server.command.ServerCommandSource;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 
-public class QQCommand extends Command<ServerCommandSource> {
+public class QQCommand implements Command<ServerCommandSource> {
 
     @Override
     public void register(CommandDispatcher<ServerCommandSource> commandDispatcher) {

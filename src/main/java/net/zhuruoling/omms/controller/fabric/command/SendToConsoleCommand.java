@@ -9,7 +9,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import org.slf4j.Logger;
 
 
-public class SendToConsoleCommand extends Command<ServerCommandSource> {
+public class SendToConsoleCommand implements Command<ServerCommandSource> {
 
     private final Logger logger = LogUtils.getLogger();
 

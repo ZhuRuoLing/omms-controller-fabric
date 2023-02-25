@@ -4,14 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.logging.LogUtils;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.stat.Stat;
-import net.minecraft.stat.StatType;
-import net.minecraft.stat.Stats;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
@@ -21,6 +15,9 @@ import net.zhuruoling.omms.controller.fabric.network.Broadcast;
 import net.zhuruoling.omms.controller.fabric.network.ControllerTypes;
 import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
+import net.zhuruoling.omms.controller.fabric.util.logging.MemoryAppender;
+import org.apache.logging.log4j.LogManager;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -131,6 +128,16 @@ public class Util {
         Text titleText = Text.of(announcement.getTitle() + "\n").copyContentOnly().setStyle(style.withColor(Formatting.GREEN).withBold(true));
 
         return Texts.join(List.of(titleText, timeText, contentText), Text.empty());
+    }
+
+    public static void addAppender() {
+        var rootLogger = (org.apache.logging.log4j.core.Logger) LogManager.getRootLogger();
+        var config = rootLogger.get();
+        var appender = MemoryAppender.newAppender("OMMSMemoryLogger");
+        appender.start();
+        config.addAppender(appender, null, null);
+        rootLogger.addAppender(appender);
+        config.start();
     }
 
 
