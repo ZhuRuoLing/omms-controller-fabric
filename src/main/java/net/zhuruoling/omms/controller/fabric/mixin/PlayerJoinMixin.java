@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
@@ -59,12 +60,14 @@ public abstract class PlayerJoinMixin {
                 if (result.isEmpty()) {
                     var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                     cir.setReturnValue(text);
+                    return;
                 }
                 Gson gson = new GsonBuilder().serializeNulls().create();
                 String[] whitelists = gson.fromJson(result, String[].class);
                 if (Objects.isNull(whitelists)) {
                     var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                     cir.setReturnValue(text);
+                    return;
                 }
                 if (Arrays.stream(whitelists).toList().contains(Config.INSTANCE.getWhitelistName())) {
                     LOGGER.info("Successfully authed player %s".formatted(player));
@@ -77,8 +80,12 @@ public abstract class PlayerJoinMixin {
                 cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            LOGGER.error("Failed to parse whitelist server return value.");
+            if (e instanceof ConnectException){
+                LOGGER.error("Cannot Connect to OMMS Central server, reason: %s".formatted(e.toString()));
+            }else {
+                e.printStackTrace();
+                LOGGER.error("Failed to auth player.");
+            }
             var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
             cir.setReturnValue(text);
         }
