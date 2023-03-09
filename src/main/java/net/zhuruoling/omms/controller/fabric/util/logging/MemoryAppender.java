@@ -36,7 +36,7 @@ public class MemoryAppender extends AbstractAppender {
     public static MemoryAppender newAppender(String name){
         return new MemoryAppender(name,
                 LevelRangeFilter.createFilter(Level.FATAL, Level.INFO, Filter.Result.ACCEPT, Filter.Result.DENY),
-                PatternLayout.newBuilder().withPattern("[%d{HH:mm:ss}] [%t/%level] %msg{nolookups}%n").build(),
+                PatternLayout.newBuilder().withPattern("[%d{HH:mm:ss}] [%t/%level]: %msg{nolookups}%n").build(),
                 false,
                 null
                 );
