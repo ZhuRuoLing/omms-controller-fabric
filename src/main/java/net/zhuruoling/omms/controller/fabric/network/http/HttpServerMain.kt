@@ -98,7 +98,7 @@ fun Application.configureRouting() {
     val logger = LoggerFactory.getLogger("HttpRouting")
     routing {
         webSocket("/") {
-            logger.info("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
+            logger.debug("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
             connectionList += this
             synchronized(SharedVariable.logCache) {
                 runBlocking {
@@ -113,7 +113,7 @@ fun Application.configureRouting() {
                     val received = frame.readText()
                     minecraftServer.execute {
                         try {
-                            logger.info("Command $received from console ${Integer.toHexString(this.hashCode())}")
+                            logger.debug("Command $received from console ${Integer.toHexString(this.hashCode())}")
                             minecraftServer.commandManager.dispatcher.execute(received, minecraftServer.commandSource)
                         } catch (e: Exception) {
                             if (e is CommandSyntaxException) {
@@ -125,7 +125,7 @@ fun Application.configureRouting() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                logger.info("Removing WebSocket Console ${Integer.toHexString(this.hashCode())}")
+                logger.debug("Removing WebSocket Console ${Integer.toHexString(this.hashCode())}")
                 connectionList -= this
             }
         }
@@ -142,7 +142,7 @@ fun Application.configureRouting() {
         }
         authenticate("omms-simple-auth") {
             get("/status") {
-                logger.info("Querying status.")
+                logger.debug("Querying status.")
                 val status = Status(
                     getControllerName(),
                     ControllerTypes.FABRIC,
@@ -156,7 +156,7 @@ fun Application.configureRouting() {
             }
             post("/runCommand") {
                 val command = call.receiveText()
-                logger.info("Got Command $command")
+                logger.debug("Command Input: $command")
                 val countDownLatch = CountDownLatch(1)
                 var data: CommandOutputData? = null
                 minecraftServer.execute {
