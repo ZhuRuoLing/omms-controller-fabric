@@ -7,7 +7,10 @@ import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
+import net.minecraft.util.Formatting;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,13 +35,22 @@ public class ShowJoinMotdMixin {
     private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
         if (!Config.INSTANCE.isEnableJoinMotd()) return;
         if (connection.getAddress() == null) {
-           return;
+            return;
         }
         try {
             connection.send(new PlayerListHeaderS2CPacket(Text.empty(), Text.empty()));
             String playerName = player.getName().copyContentOnly().getString();
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), playerName);
-            String result = invokeHttpGetRequest(url);
+            var response = invokeHttpGetRequest(url);
+            if (response.getLeft() != 200) {
+                player.sendMessageToClient(
+                        Text.of("Cannot communicate with OMMS Central Server.")
+                                .copyContentOnly()
+                                .setStyle(Style.EMPTY.withColor(TextColor.fromFormatting(Formatting.RED))),
+                        true);
+                return;
+            }
+            String result = response.getRight();
             NbtCompound compound = new NbtCompound();
             compound.putString("servers", result);
             var dispatcher = Objects.requireNonNull(player.getServer()).getCommandManager().getDispatcher();

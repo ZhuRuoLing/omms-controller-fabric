@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Pair;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
@@ -17,7 +18,6 @@ import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.util.logging.MemoryAppender;
 import org.apache.logging.log4j.LogManager;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,7 +25,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatterBuilder;
@@ -42,21 +41,21 @@ public class Util {
 
     public static final Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public static String invokeHttpGetRequest(String httpUrl) throws IOException, InterruptedException {
+    public static Pair<Integer,String> invokeHttpGetRequest(String httpUrl) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(httpUrl)).build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
-        return response.body();
+        return new Pair<>(response.statusCode(), response.body());
     }
 
-    public static void invokeHttpPostRequest(String url, String content) throws IOException, InterruptedException {
+    public static int invokeHttpPostRequest(String url, String content) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(content))
                 .header("Content-Type", "text/plain")
                 .uri(URI.create(url)).build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
-        System.out.println(response.statusCode());
+        return response.statusCode();
     }
 
 
@@ -113,21 +112,22 @@ public class Util {
         return Texts.join(texts, Text.empty());
     }
 
-    public static Text fromAnnouncement(Announcement announcement) {
+    public static List<Text> fromAnnouncement(Announcement announcement) {
         Style style = Style.EMPTY;
         String pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.FULL, FormatStyle.FULL, Chronology.ofLocale(Locale.getDefault()), Locale.getDefault());
         SimpleDateFormat format = new SimpleDateFormat(pattern);
         Text timeText = Text.of("Published at %s\n".formatted(format.format(new Date(announcement.getTimeMillis()))))
-                .copyContentOnly().setStyle(style.withColor(TextColor.fromFormatting(Formatting.LIGHT_PURPLE)).withBold(true));
-        StringBuilder builder = new StringBuilder();
+                .copy().setStyle(style.withColor(TextColor.fromFormatting(Formatting.LIGHT_PURPLE)).withBold(true));
+        Text titleText = Text.of("Title: "+announcement.getTitle()).copy().setStyle(style.withColor(Formatting.GREEN).withBold(true));
+        ArrayList<Text> textArrayList = new ArrayList<>();
+        textArrayList.add(Text.empty());
+        textArrayList.add(titleText);
+        textArrayList.add(timeText);
         for (String s : announcement.getContent()) {
-            builder.append(s);
-            builder.append("\n");
+            textArrayList.add(Text.of(s));
         }
-        Text contentText = Text.of(builder.toString()).copyContentOnly();
-        Text titleText = Text.of(announcement.getTitle() + "\n").copyContentOnly().setStyle(style.withColor(Formatting.GREEN).withBold(true));
-
-        return Texts.join(List.of(titleText, timeText, contentText), Text.empty());
+        textArrayList.add(Text.empty());
+        return textArrayList;
     }
 
     public static void addAppender() {
@@ -204,21 +204,23 @@ public class Util {
         }
     }
 
-    public static int getAnnouncementToPlayerFromUrl(CommandContext<ServerCommandSource> context, String url) {
+    public static int sendAnnouncementFromUrlToPlayer(CommandContext<ServerCommandSource> context, String url) {
         try {
-            String result = invokeHttpGetRequest(url);
+            var value = invokeHttpGetRequest(url);
+            if (value.getLeft() != 200){
+                context.getSource().sendError(Text.of("Cannot communicate with OMMS Central Server."));
+                return -1;
+            }
+            String result = value.getRight();
             if (result != null) {
                 if (result.equals("NO_ANNOUNCEMENT")) {
                     Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
                     context.getSource().sendFeedback(text, false);
                     return 0;
                 }
-                System.out.println(result);
                 try {
-                    String jsonStr = new String(Base64.getDecoder().decode(result.replace("\"", "")), StandardCharsets.UTF_8);
-                    Gson gson = new GsonBuilder().serializeNulls().create();
-                    var announcement = gson.fromJson(jsonStr, Announcement.class);
-                    context.getSource().sendFeedback(fromAnnouncement(announcement), false);
+                    var announcement = gson.fromJson(result, Announcement.class);
+                    fromAnnouncement(announcement).forEach(text -> context.getSource().sendFeedback(text, false));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -12,6 +12,7 @@ import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,7 +27,7 @@ public class AnnouncementCommand implements Command<ServerCommandSource> {
                                 .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
                                 .executes(context -> {
                                     String url = "http://%s:%d/announcement/latest".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort());
-                                    return Util.getAnnouncementToPlayerFromUrl(context, url);
+                                    return Util.sendAnnouncementFromUrlToPlayer(context, url);
                                 })
                         )
                         .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0))
@@ -38,7 +39,7 @@ public class AnnouncementCommand implements Command<ServerCommandSource> {
                                                 .executes(context -> {
                                                     String name = StringArgumentType.getString(context, "name");
                                                     String url = "http://%s:%d/announcement/get/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), name);
-                                                    return Util.getAnnouncementToPlayerFromUrl(context, url);
+                                                    return Util.sendAnnouncementFromUrlToPlayer(context, url);
                                                 })
                                 )
                         )
@@ -46,48 +47,50 @@ public class AnnouncementCommand implements Command<ServerCommandSource> {
                                 .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(0)).executes(context -> {
                                     String url = "http://%s:%d/announcement/list".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort());
                                     try {
-                                        String result = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
-                                        String[] list = new Gson().fromJson(result, String[].class);
-                                        ArrayList<Text> texts = new ArrayList<>();
-                                        for (String s : list) {
-                                            System.out.println(s);
-                                            var text = Texts.join(
-                                                            List.of(
-                                                                    Text.of("["),
-                                                                    Text.of(s)
-                                                                            .copyContentOnly()
-                                                                            .setStyle(
-                                                                                    Style.EMPTY
-                                                                                            .withColor(Formatting.GREEN)
-                                                                            ),
-                                                                    Text.of("]")
-                                                            ),
-                                                            Text.of("")
-                                                    )
-                                                    .copyContentOnly()
-                                                    .setStyle(
-                                                            Style.EMPTY
-                                                                    .withHoverEvent(
-                                                                            new HoverEvent(
-                                                                                    HoverEvent.Action.SHOW_TEXT,
-                                                                                    Text.of("Click to get announcement.")
-                                                                            )
-                                                                    )
-                                                                    .withClickEvent(
-                                                                            new ClickEvent(
-                                                                                    ClickEvent.Action.RUN_COMMAND,
-                                                                                    "/announcement get %s".formatted(s)
-                                                                            )
-                                                                    )
-                                                    );
-                                            System.out.println(text);
-
+                                        var pair = Objects.requireNonNull(Util.invokeHttpGetRequest(url));
+                                        if (pair.getLeft() != 200) {
+                                            context.getSource().sendError(Text.of("Cannot communicate with OMMS Central Server."));
+                                            return -1;
                                         }
-                                        System.out.println(texts);
+                                        String result = pair.getRight();
+                                        HashMap<String, String> map = new HashMap<>();
+                                        map = new Gson().fromJson(result, map.getClass());
+                                        ArrayList<Text> texts = new ArrayList<>();
+                                        map.forEach((s, s2) -> {
+                                            var text = Texts.join(
+                                                    List.of(
+                                                            Text.of("["),
+                                                            Text.of(s2)
+                                                                    .copyContentOnly()
+                                                                    .setStyle(
+                                                                            Style.EMPTY
+                                                                                    .withColor(Formatting.GREEN)
+                                                                    ),
+                                                            Text.of("]")
+                                                    ),
+                                                    Text.of("")
+                                            ).copy().setStyle(Style.EMPTY
+                                                    .withHoverEvent(
+                                                            new HoverEvent(
+                                                                    HoverEvent.Action.SHOW_TEXT,
+                                                                    Text.of("Click to get announcement.")
+                                                            )
+                                                    )
+                                                    .withClickEvent(
+                                                            new ClickEvent(
+                                                                    ClickEvent.Action.RUN_COMMAND,
+                                                                    "/announcement get %s".formatted(s)
+                                                            )
+                                                    )
+                                            ).copy();
+                                            texts.add(text);
+                                        });
                                         context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
-                                        context.getSource().sendFeedback(Text.of(""), false);
-                                        context.getSource().sendFeedback(Texts.join(texts, Text.of(" ")), false);
-                                        context.getSource().sendFeedback(Text.of(""), false);
+                                        //context.getSource().sendFeedback(Text.of(""), false);
+                                        for (Text text : texts) {
+                                            context.getSource().sendFeedback(text, false);
+                                        }
+                                        //context.getSource().sendFeedback(Text.of(""), false);
                                         return 0;
                                     } catch (Exception e) {
                                         e.printStackTrace();

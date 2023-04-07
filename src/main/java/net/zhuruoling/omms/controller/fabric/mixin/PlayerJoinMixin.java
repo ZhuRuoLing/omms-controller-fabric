@@ -55,7 +55,13 @@ public abstract class PlayerJoinMixin {
         try {
             String player = profile.getName();
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), player);
-            String result = invokeHttpGetRequest(url);
+            var pair = invokeHttpGetRequest(url);
+            if (pair.getLeft() != 200){
+                var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
+                cir.setReturnValue(text);
+                return;
+            }
+            String result = pair.getRight();
             if (result != null) {
                 if (result.isEmpty()) {
                     var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
