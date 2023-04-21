@@ -4,6 +4,7 @@ import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
+import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,10 +23,16 @@ public abstract class PlayerDisconnectMixin {
     @Inject(method = "onDisconnected", at = @At("HEAD"))
     void onPlayerDisconnect(Text reason, CallbackInfo ci) {
         String s = reason.getString();
-        SharedVariable.getSender().addToQueue(Util.TARGET_CHAT,
-                Util.gson.toJson(Util.toPlayerConnectionStateBroadcast(
-                        this.getPlayer().getName().getString(),
-                        reason.getString().equals("Disconnected") ? reason : Texts.join(List.of(Text.of("Disconnected: "), reason), Text.empty())
-                )));
+        switch (Config.INSTANCE.getChatbridgeImplementation()) {
+            case WS -> SharedVariable.getWebsocketChatClient().addToCache(Util.toPlayerConnectionStateBroadcast(
+                    this.getPlayer().getName().getString(),
+                    reason.getString().equals("Disconnected") ? reason : Texts.join(List.of(Text.of("Disconnected: "), reason), Text.empty())
+            ));
+            case UDP -> SharedVariable.getSender().addToQueue(Util.TARGET_CHAT,
+                    Util.gson.toJson(Util.toPlayerConnectionStateBroadcast(
+                            this.getPlayer().getName().getString(),
+                            reason.getString().equals("Disconnected") ? reason : Texts.join(List.of(Text.of("Disconnected: "), reason), Text.empty())
+                    )));
+        }
     }
 }

@@ -2,6 +2,7 @@ package net.zhuruoling.omms.controller.fabric.config;
 
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
+import net.zhuruoling.omms.controller.fabric.network.WebsocketChatClient;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 
 import java.util.ArrayList;
@@ -16,9 +17,18 @@ public class SharedVariable {
     public static final ArrayList<String> logCache = new ArrayList<>();
     private static UdpBroadcastSender sender;
     private static UdpReceiver chatReceiver;
+    private static WebsocketChatClient websocketChatClient;
 
     public static UdpBroadcastSender getSender() {
         return sender;
+    }
+
+    public static WebsocketChatClient getWebsocketChatClient() {
+        return websocketChatClient;
+    }
+
+    public static void setWebsocketChatClient(WebsocketChatClient websocketChatClient) {
+        SharedVariable.websocketChatClient = websocketChatClient;
     }
 
     public static void setSender(UdpBroadcastSender sender) {

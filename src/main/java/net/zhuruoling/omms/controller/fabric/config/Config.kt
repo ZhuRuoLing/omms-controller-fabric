@@ -20,6 +20,7 @@ httpServerPort=50010
 controllerName=omms-controller
 usesWhitelist=my_whitelist
 channel=GLOBAL
+chatbridgeImplementation=UDP
 trustedCentralServer=omms-central
 customFooter
 serverMappings"""
@@ -38,6 +39,7 @@ object Config {
     private var chatChannel = ""
     private var customFooter = ""
     private var serverMappings = hashMapOf<String, ServerMapping>()
+    var chatbridgeImplementation = ChatbridgeImplementation.UDP
 
 
     fun load() {
@@ -62,7 +64,11 @@ object Config {
         whitelistName = properties.get("usesWhitelist", "my_whitelist")
         customFooter = properties.get("customFooter", "")
         httpServerPort = properties.get("httpServerPort", "50010").toInt()
-
+        chatbridgeImplementation = if (enableChatBridge) try {
+            ChatbridgeImplementation.valueOf(properties.get("chatbridgeImplementation", ""))
+        } catch (_: Exception) {
+            ChatbridgeImplementation.DISABLED
+        } else ChatbridgeImplementation.DISABLED
         val serverMappingNames: String = properties.get("serverMappings", "")
         if (serverMappingNames.contains(",")) {
             if (serverMappingNames.isBlank()) {
@@ -141,7 +147,7 @@ object Config {
     }
 
 
-    fun getWhitelistName(): String? {
+    fun getWhitelistName(): String {
         return this.whitelistName
     }
 
@@ -160,4 +166,8 @@ object Config {
 
 fun <T> Properties.get(key: String, defaultValue: T): T {
     return this.getOrDefault(key, defaultValue) as T
+}
+
+enum class ChatbridgeImplementation {
+    WS, UDP, DISABLED
 }

@@ -174,7 +174,13 @@ public class Util {
         Broadcast broadcast = new Broadcast(playerName, text);
         Gson gson = new GsonBuilder().serializeNulls().create();
         String data = gson.toJson(broadcast, Broadcast.class);
-        SharedVariable.getSender().addToQueue(Util.TARGET_CHAT, data);
+        switch (Config.INSTANCE.getChatbridgeImplementation()){
+            case UDP -> SharedVariable.getSender().addToQueue(Util.TARGET_CHAT, data);
+            case WS -> SharedVariable.getWebsocketChatClient().addToCache(broadcast);
+            case DISABLED -> {
+                //do  nothing
+            }
+        }
     }
 
 
@@ -269,7 +275,7 @@ public class Util {
         return new Broadcast(Config.INSTANCE.getChatChannel(),
                 Config.INSTANCE.getControllerName(),
                 playerName,
-                stateReason.getString(),
+                " *"+stateReason.getString()+ "*",
                 Util.randomStringGen(16)
         );
     }

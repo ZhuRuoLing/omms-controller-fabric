@@ -56,7 +56,7 @@ public abstract class PlayerJoinMixin {
             String player = profile.getName();
             String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), player);
             var pair = invokeHttpGetRequest(url);
-            if (pair.getLeft() != 200){
+            if (pair.getLeft() != 200) {
                 var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
                 cir.setReturnValue(text);
                 return;
@@ -86,9 +86,9 @@ public abstract class PlayerJoinMixin {
                 cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
             }
         } catch (Exception e) {
-            if (e instanceof ConnectException){
+            if (e instanceof ConnectException) {
                 LOGGER.error("Cannot Connect to OMMS Central server, reason: %s".formatted(e.toString()));
-            }else {
+            } else {
                 e.printStackTrace();
                 LOGGER.error("Failed to auth player.");
             }
@@ -112,10 +112,16 @@ public abstract class PlayerJoinMixin {
         } else {
             mutableText = Text.translatable("multiplayer.player.joined.renamed", player.getDisplayName(), string);
         }
-        SharedVariable.getSender().addToQueue(Util.TARGET_CHAT,
-                Util.gson.toJson(Util.toPlayerConnectionStateBroadcast(
-                        player.getName().getString(),
-                        mutableText
-                )));
+        switch (Config.INSTANCE.getChatbridgeImplementation()) {
+            case WS -> SharedVariable.getWebsocketChatClient().addToCache(Util.toPlayerConnectionStateBroadcast(
+                    player.getName().getString(),
+                    mutableText
+            ));
+            case UDP -> SharedVariable.getSender().addToQueue(Util.TARGET_CHAT,
+                    Util.gson.toJson(Util.toPlayerConnectionStateBroadcast(
+                            player.getName().getString(),
+                            mutableText
+                    )));
+        }
     }
 }
