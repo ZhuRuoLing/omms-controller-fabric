@@ -25,7 +25,6 @@ dependencies {
     implementation 'io.ktor:ktor-client-auth:2.3.0'
     shadowInclude implementation('io.ktor:ktor-server-auth-jvm:2.2.2')
     shadowInclude implementation('io.ktor:ktor-server-core-jvm:2.2.2')
-    shadowInclude implementation('io.ktor:ktor-client-apache-jvm:2.2.2')
     shadowInclude implementation('io.ktor:ktor-server-websockets-jvm:2.2.2')
     shadowInclude implementation('io.ktor:ktor-client-plugins-jvm:2.2.2')
 
