@@ -21,31 +21,30 @@ configurations {
 }
 
 dependencies {
-    implementation 'io.ktor:ktor-client-apache:2.2.2'
-    implementation 'io.ktor:ktor-client-auth:2.3.0'
-    shadowInclude implementation('io.ktor:ktor-server-auth-jvm:2.2.2')
-    shadowInclude implementation('io.ktor:ktor-server-core-jvm:2.2.2')
-    shadowInclude implementation('io.ktor:ktor-server-websockets-jvm:2.2.2')
-    shadowInclude implementation('io.ktor:ktor-client-plugins-jvm:2.2.2')
-
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modImplementation "net.fabricmc:fabric-language-kotlin:1.9.0+kotlin.1.8.0"
+
+    shadowInclude implementation('io.ktor:ktor-server-auth-jvm:2.2.2')
+    shadowInclude implementation('io.ktor:ktor-server-core-jvm:2.2.2')
+    shadowInclude implementation('io.ktor:ktor-server-websockets-jvm:2.2.2')
     shadowInclude implementation("io.ktor:ktor-server-websockets:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-server-core:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-server-cio:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-server-auth-jvm:$ktor_version")
+
+    shadowInclude implementation('io.ktor:ktor-client-plugins-jvm:2.2.2')
     shadowInclude implementation("io.ktor:ktor-client:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-cio:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-websockets:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-auth:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-auth-jvm:$ktor_version")
-    modImplementation include("eu.pb4:sgui:1.1.5+1.19.1")
 }
 
 processResources {
