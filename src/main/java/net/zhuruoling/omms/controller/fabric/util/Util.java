@@ -18,7 +18,8 @@ import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.util.logging.MemoryAppender;
 import org.apache.logging.log4j.LogManager;
-
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -221,18 +222,18 @@ public class Util {
             if (result != null) {
                 if (result.equals("NO_ANNOUNCEMENT")) {
                     Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
-                    context.getSource().sendFeedback(text, false);
+                    context.getSource().sendFeedback(() -> text, false);
                     return 0;
                 }
                 try {
                     var announcement = gson.fromJson(result, Announcement.class);
-                    fromAnnouncement(announcement).forEach(text -> context.getSource().sendFeedback(text, false));
+                    fromAnnouncement(announcement).forEach(text -> context.getSource().sendFeedback(() -> text, false));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else {
                 Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
-                context.getSource().sendFeedback(text, false);
+                context.getSource().sendFeedback(() -> text, false);
                 return 0;
             }
         } catch (Exception e) {

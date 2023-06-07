@@ -8,6 +8,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Pair;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 
@@ -85,10 +86,10 @@ public class AnnouncementCommand implements Command<ServerCommandSource> {
                                             ).copy();
                                             texts.add(text);
                                         });
-                                        context.getSource().sendFeedback(Text.of("-------Announcements-------"), false);
+                                        context.getSource().sendFeedback(() -> Text.of("-------Announcements-------"), false);
                                         //context.getSource().sendFeedback(Text.of(""), false);
                                         for (Text text : texts) {
-                                            context.getSource().sendFeedback(text, false);
+                                            context.getSource().sendFeedback(() -> text, false);
                                         }
                                         //context.getSource().sendFeedback(Text.of(""), false);
                                         return 0;

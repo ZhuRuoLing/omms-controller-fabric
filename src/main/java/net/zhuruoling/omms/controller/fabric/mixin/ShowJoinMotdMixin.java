@@ -11,6 +11,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Pair;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Objects;
 
 import static net.zhuruoling.omms.controller.fabric.util.Util.invokeHttpGetRequest;
+
+import com.mojang.brigadier.CommandDispatcher;
 
 
 @Mixin(PlayerManager.class)

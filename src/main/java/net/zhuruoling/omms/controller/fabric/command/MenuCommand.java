@@ -44,10 +44,10 @@ public class MenuCommand implements Command<ServerCommandSource> {
                                     serverEntries.add(Util.fromServerString(mapping.getDisplayName(), mapping.getProxyName(), isCurrentServer, false));
                                 }
                                 Text serverText = Texts.join(serverEntries, Util.SPACE);
-                                context.getSource().sendFeedback(Text.of("----------Welcome to %s server!----------".formatted(Config.INSTANCE.getControllerName())), false);
-                                context.getSource().sendFeedback(Text.of("    "), false);
-                                context.getSource().sendFeedback(serverText, false);
-                                context.getSource().sendFeedback(Text.of("Type \"/announcement latest\" to fetch latest announcement."), false);
+                                context.getSource().sendFeedback(() -> Text.of("----------Welcome to %s server!----------".formatted(Config.INSTANCE.getControllerName())), false);
+                                context.getSource().sendFeedback(() -> Text.of("    "), false);
+                                context.getSource().sendFeedback(() -> serverText, false);
+                                context.getSource().sendFeedback(() -> Text.of("Type \"/announcement latest\" to fetch latest announcement."), false);
                                 return 1;
 
                             } catch (Exception e) {

@@ -34,7 +34,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     @SuppressWarnings("deprecated")
     private static void onServerStop(MinecraftServer minecraftServer) {
         if (Config.INSTANCE.isEnableChatBridge() && Config.INSTANCE.getChatbridgeImplementation() == ChatbridgeImplementation.UDP) {
-            switch (Config.INSTANCE.getChatbridgeImplementation()){
+            switch (Config.INSTANCE.getChatbridgeImplementation()) {
                 case UDP -> {
                     if (SharedVariable.getSender() != null) {
                         SharedVariable.getSender().setStopped(true);
@@ -46,7 +46,8 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                         SharedVariable.getWebsocketChatClient().interrupt();
                     }
                 }
-                case DISABLED -> {}
+                case DISABLED -> {
+                }
             }
         }
         if (Config.INSTANCE.isEnableRemoteControl()) {
@@ -100,7 +101,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                             HttpServerMainKt.httpServer.stop(1, 1);
                             HttpServerMainKt.httpServerThread.interrupt();
                             HttpServerMainKt.httpServerThread = HttpServerMainKt.serverMain(Config.INSTANCE.getHttpServerPort(), context.getSource().getServer());
-                            context.getSource().sendFeedback(Text.of("Config reloaded.").copyContentOnly().setStyle(Style.EMPTY.withColor(TextColor.fromFormatting(Formatting.AQUA))), true);
+                            context.getSource().sendFeedback(() -> Text.of("Config reloaded.").copyContentOnly().setStyle(Style.EMPTY.withColor(TextColor.fromFormatting(Formatting.AQUA))), true);
                             return 0;
                         })));
 
@@ -139,7 +140,8 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     chatReceiver.start();
                     SharedVariable.setChatReceiver(chatReceiver);
                 }
-                case DISABLED -> {}
+                case DISABLED -> {
+                }
             }
         }
 

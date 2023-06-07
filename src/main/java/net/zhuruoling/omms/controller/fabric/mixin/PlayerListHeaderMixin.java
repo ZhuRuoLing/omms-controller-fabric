@@ -2,6 +2,7 @@ package net.zhuruoling.omms.controller.fabric.mixin;
 
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.zhuruoling.omms.controller.fabric.config.Config;
