@@ -25,6 +25,10 @@ public class MemoryAppender extends AbstractAppender {
         s = s.substring(0, s.length()-2);
         //Util.sendChatBroadcast(s, "logger");
         synchronized (SharedVariable.logCache){
+            if (SharedVariable.logCache.size() > 500){
+                SharedVariable.logCache.remove(0);
+                SharedVariable.logCache.remove(0);
+            }
             SharedVariable.logCache.add(s);
         }
         String finalS = s;
