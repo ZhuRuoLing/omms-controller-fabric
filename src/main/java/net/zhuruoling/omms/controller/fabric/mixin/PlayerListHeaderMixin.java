@@ -26,7 +26,6 @@ public class PlayerListHeaderMixin {
 
     @ModifyVariable(method = "<init>(Lnet/minecraft/text/Text;Lnet/minecraft/text/Text;)V", at = @At("HEAD"), index = 2, name = "footer", argsOnly = true)
     private static Text modify(Text footer) {
-        System.out.println("Changing footer");
         if (footer.getString().isEmpty()) {
             return Config.INSTANCE.getCustomFooter();
         }
