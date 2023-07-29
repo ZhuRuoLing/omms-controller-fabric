@@ -111,6 +111,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         SharedVariable.ready = true;
 
         LogUtils.getLogger().info("Hello World!");
+
     }
 
     private void onServerStart(MinecraftServer server) {

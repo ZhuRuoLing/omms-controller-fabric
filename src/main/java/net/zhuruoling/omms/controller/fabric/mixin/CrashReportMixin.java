@@ -70,7 +70,7 @@ public abstract class CrashReportMixin {
             Files.deleteIfExists(path);
             Files.createFile(path);
             Files.writeString(path, content);
-            Util.submitCrashReportUsingExecutor(content);
+            Util.submitCrashReport(content);
         } catch (Exception e) {
             e.printStackTrace();
         }

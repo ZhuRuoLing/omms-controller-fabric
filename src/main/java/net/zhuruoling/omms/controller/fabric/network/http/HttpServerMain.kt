@@ -134,12 +134,6 @@ fun Application.configureRouting() {
                 SharedVariable.sessionId
             }
         }
-
-        get("/log") {
-            call.respondText(status = HttpStatusCode.OK) {
-                "${System.currentTimeMillis()}\n" + SharedVariable.logCache.joinToString(separator = "\n")
-            }
-        }
         authenticate("omms-simple-auth") {
             get("/status") {
                 logger.debug("Querying status.")

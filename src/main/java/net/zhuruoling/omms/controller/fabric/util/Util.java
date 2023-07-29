@@ -18,8 +18,7 @@ import net.zhuruoling.omms.controller.fabric.network.Status;
 import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.util.logging.MemoryAppender;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.config.LoggerConfig;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -38,7 +37,6 @@ public class Util {
     public static final Text SPACE = Text.of(" ");
 
     public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4", 10086);
-    public static final UdpBroadcastSender.Target TARGET_CONTROL = new UdpBroadcastSender.Target("224.114.51.4", 10087);
 
     public static final Gson gson = new GsonBuilder().serializeNulls().create();
 
@@ -49,14 +47,13 @@ public class Util {
         return new Pair<>(response.statusCode(), response.body());
     }
 
-    public static int invokeHttpPostRequest(String url, String content) throws IOException, InterruptedException {
+    public static void invokeHttpPostRequest(String url, String content) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(content))
                 .header("Content-Type", "text/plain")
                 .uri(URI.create(url)).build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
-        return response.statusCode();
+        client.send(request, HttpResponse.BodyHandlers.ofString(Charset.defaultCharset()));
     }
 
 
@@ -254,6 +251,7 @@ public class Util {
         }
     }
 
+    @Deprecated
     public static void submitCommandLog(String cmd, String out) {
         try {
             invokeHttpPostRequest("http://%s:%d/controller/command/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()),
@@ -263,11 +261,10 @@ public class Util {
         }
     }
 
-    public static void submitCrashReportUsingExecutor(String content) {
+    public static void submitCrashReport(String content) {
         submitToExecutor(() -> {
             try {
-                invokeHttpPostRequest("http://%s:%d/controller/crashReport/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort()),
-                        content);
+                CrashReportUploader.upload(content);
             } catch (Exception e) {
                 LogUtils.getLogger().error("Error occurred while updating command log.", e);
             }
