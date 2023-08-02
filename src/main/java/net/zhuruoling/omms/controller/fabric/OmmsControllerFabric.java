@@ -25,6 +25,7 @@ import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import net.zhuruoling.omms.controller.fabric.network.WebsocketChatClient;
 import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
 import net.zhuruoling.omms.controller.fabric.util.Util;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
@@ -60,6 +61,12 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
     private static void registerMenuCommand() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((a,b,c) -> {
+            a.register(LiteralArgumentBuilder.<ServerCommandSource>literal("dumpLogs").<ServerCommandSource>executes(ctx -> {
+                SharedVariable.logCache.forEach(System.out::println);
+                return 0;
+            }));
+        });
     }
 
     @Override
@@ -105,7 +112,10 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                             return 0;
                         })));
 
-        ServerLifecycleEvents.SERVER_STARTED.register(this::onServerStart);
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            Thread launchThread = new Thread(null, () -> onServerStart(server), "OMMS-OnServerStart");
+            launchThread.start();
+        });
         ServerLifecycleEvents.SERVER_STOPPING.register(OmmsControllerFabric::onServerStop);
         ServerLifecycleEvents.SERVER_STOPPED.register(OmmsControllerFabric::onServerStop);
         SharedVariable.ready = true;
@@ -124,21 +134,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                     SharedVariable.setWebsocketChatClient(websocketChatClient);
                 }
                 case UDP -> {
-                    var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
-                        var broadcast = new Gson().fromJson(m, Broadcast.class);
-                        if (!(Objects.equals(broadcast.getChannel(), Config.INSTANCE.getChatChannel()))) return;
-                        //LogUtils.getLogger().info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
-                        if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
-                            server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
-                            return;
-                        }
-                        if (!Objects.equals(broadcast.getServer(), Config.INSTANCE.getControllerName())) {
-                            server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
-                        }
-                    });
-
-                    chatReceiver.setDaemon(true);
-                    chatReceiver.start();
+                    var chatReceiver = getUdpReceiver(server);
                     SharedVariable.setChatReceiver(chatReceiver);
                 }
                 case DISABLED -> {
@@ -155,6 +151,26 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             sender.start();
             SharedVariable.setSender(sender);
         }
+    }
+
+    @NotNull
+    private static UdpReceiver getUdpReceiver(MinecraftServer server) {
+        var chatReceiver = new UdpReceiver(server, Util.TARGET_CHAT, (s, m) -> {
+            var broadcast = new Gson().fromJson(m, Broadcast.class);
+            if (!(Objects.equals(broadcast.getChannel(), Config.INSTANCE.getChatChannel()))) return;
+            //LogUtils.getLogger().info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
+            if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
+                server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
+                return;
+            }
+            if (!Objects.equals(broadcast.getServer(), Config.INSTANCE.getControllerName())) {
+                server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
+            }
+        });
+
+        chatReceiver.setDaemon(true);
+        chatReceiver.start();
+        return chatReceiver;
     }
 
 

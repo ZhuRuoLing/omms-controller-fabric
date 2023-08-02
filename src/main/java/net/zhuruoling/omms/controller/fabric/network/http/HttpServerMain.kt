@@ -102,9 +102,7 @@ fun Application.configureRouting() {
             connectionList += this
             synchronized(SharedVariable.logCache) {
                 runBlocking {
-                    SharedVariable.logCache.forEach {
-                        send(it)
-                    }
+                    send(SharedVariable.logCache.joinToString("\n"))
                 }
             }
             try {
