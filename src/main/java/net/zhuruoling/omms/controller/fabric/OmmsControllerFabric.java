@@ -61,12 +61,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
     private static void registerMenuCommand() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
-        CommandRegistrationCallback.EVENT.register((a,b,c) -> {
-            a.register(LiteralArgumentBuilder.<ServerCommandSource>literal("dumpLogs").<ServerCommandSource>executes(ctx -> {
-                SharedVariable.logCache.forEach(System.out::println);
-                return 0;
-            }));
-        });
+
     }
 
     @Override

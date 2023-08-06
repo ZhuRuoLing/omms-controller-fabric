@@ -4,9 +4,11 @@ import net.minecraft.util.crash.CrashReport;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
 import net.zhuruoling.omms.controller.fabric.util.Util;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -31,6 +33,7 @@ public abstract class CrashReportMixin {
         return null;
     }
 
+    @Unique
     String makeCrashReport() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("---- Minecraft Crash Report ----\n");
@@ -59,17 +62,14 @@ public abstract class CrashReportMixin {
     @Shadow
     public abstract void addStackTrace(StringBuilder crashReportBuilder);
 
+    @Shadow @Final private static Logger LOGGER;
+
     @Inject(method = "asString", at = @At("RETURN"))
     void inj(CallbackInfoReturnable<String> cir) {
         if (!SharedVariable.ready) return;
-        System.out.println("Uploading crash report to OMMS Central Server.");
+        LOGGER.info("Uploading crash report to OMMS Central Server.");
         var content = makeCrashReport();
-        content = Config.INSTANCE.getControllerName() + "\n" + content;
-        Path path = Path.of("latestCrashReport.txt");
         try {
-            Files.deleteIfExists(path);
-            Files.createFile(path);
-            Files.writeString(path, content);
             Util.submitCrashReport(content);
         } catch (Exception e) {
             e.printStackTrace();
