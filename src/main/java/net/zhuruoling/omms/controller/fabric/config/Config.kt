@@ -22,6 +22,7 @@ usesWhitelist=my_whitelist
 channel=GLOBAL
 chatbridgeImplementation=UDP
 trustedCentralServer=omms-central
+usePermissionConfig=false
 customFooter
 serverMappings"""
 
@@ -38,6 +39,7 @@ object Config {
     private var httpServerPort = 0
     private var chatChannel = ""
     private var customFooter = ""
+    private var usePermissionConfig = false
     private var serverMappings = hashMapOf<String, ServerMapping>()
     var chatbridgeImplementation = ChatbridgeImplementation.UDP
 
@@ -59,11 +61,12 @@ object Config {
         this.enableRemoteControl = properties.get("enableRemoteControl", "false").toBoolean()
         this.chatChannel = properties.get("channel", "GLOBAL")
         this.controllerName = properties.get("controllerName", "omms-controller")
-        httpQueryAddress = properties.get("httpQueryAddr", "localhost")
-        httpQueryPort = properties.get("httpQueryPort", "50001").toInt()
-        whitelistName = properties.get("usesWhitelist", "my_whitelist")
-        customFooter = properties.get("customFooter", "")
-        httpServerPort = properties.get("httpServerPort", "50010").toInt()
+        this.httpQueryAddress = properties.get("httpQueryAddr", "localhost")
+        this.httpQueryPort = properties.get("httpQueryPort", "50001").toInt()
+        this.whitelistName = properties.get("usesWhitelist", "my_whitelist")
+        this.customFooter = properties.get("customFooter", "")
+        this.httpServerPort = properties.get("httpServerPort", "50010").toInt()
+        this.usePermissionConfig = properties.get("usePermissionConfig", "false").toBoolean()
         chatbridgeImplementation = if (enableChatBridge) try {
             ChatbridgeImplementation.valueOf(properties.get("chatbridgeImplementation", ""))
         } catch (_: Exception) {
@@ -161,6 +164,8 @@ object Config {
     }
 
     fun getHttpServerPort() = httpServerPort
+
+    fun usePermissionConfig() = usePermissionConfig
 
 }
 

@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Style;
@@ -24,9 +25,13 @@ import net.zhuruoling.omms.controller.fabric.network.UdpBroadcastSender;
 import net.zhuruoling.omms.controller.fabric.network.UdpReceiver;
 import net.zhuruoling.omms.controller.fabric.network.WebsocketChatClient;
 import net.zhuruoling.omms.controller.fabric.network.http.HttpServerMainKt;
+import net.zhuruoling.omms.controller.fabric.permission.MappedNames;
+import net.zhuruoling.omms.controller.fabric.permission.PermissionRuleManager;
+import net.zhuruoling.omms.controller.fabric.permission.PatchUtil;
 import net.zhuruoling.omms.controller.fabric.util.Util;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
@@ -61,12 +66,23 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
     private static void registerMenuCommand() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
-
     }
 
     @Override
     public void onInitializeServer() {
         Config.INSTANCE.load();
+        if (Config.INSTANCE.usePermissionConfig()) {
+            MappedNames.mapNames();
+            PatchUtil.init();
+            PatchUtil.initTransformer();
+            Arrays.stream(FabricLoader.getInstance().getConfigDir().toFile().listFiles())
+                    .filter(it -> it.getName().endsWith(".pr"))
+                    .forEach(file -> {
+                        PermissionRuleManager.INSTANCE.loadFromRulesFile(file);
+                    });
+            PermissionRuleManager.INSTANCE.init();
+        }
+
 
         if (Config.INSTANCE.isEnableJoinMotd()) {
             registerMenuCommand();

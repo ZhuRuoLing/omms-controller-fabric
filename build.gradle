@@ -45,6 +45,7 @@ dependencies {
     shadowInclude implementation("io.ktor:ktor-client-websockets:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-auth:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-auth-jvm:$ktor_version")
+    shadowInclude implementation('net.bytebuddy:byte-buddy-agent:1.14.0')
 }
 
 processResources {
@@ -64,6 +65,7 @@ shadowJar {
         rename { "${it}_${project.archivesBaseName}" }
     }
     exclude "/kotlin*"
+    relocate "net.bytebuddy", "net.zhuruoling.omms.deps.bytebuddy"
 }
 
 task("remapShadowJar", type: net.fabricmc.loom.task.RemapJarTask, dependsOn: shadowJar) {
