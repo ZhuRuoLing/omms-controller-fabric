@@ -113,12 +113,13 @@ public class PatchUtil {
         }
     }
 
-    public static void patchClass(String className) {
+    public static boolean patchClass(String className) {
         transformerLists.add(PERMISSION_TRANSFORMER);
         try {
             var clazz = Class.forName(className);
             instrumentation.retransformClasses(clazz);
             transformerLists.remove(PERMISSION_TRANSFORMER);
+            return true;
         } catch (Throwable t) {
             logger.warn("Failed to transform %s, attempting to revert changes".formatted(className), t);
             transformerLists.remove(PERMISSION_TRANSFORMER);
@@ -127,6 +128,7 @@ public class PatchUtil {
             } catch (Throwable t2) {
                 logger.warn("Failed to revert changes to %s".formatted(className), t2);
             }
+            return false;
         }
     }
 
@@ -137,13 +139,34 @@ public class PatchUtil {
             Files.delete(iterator.next());
         }
     }
+//    int ICONST_0 = 3; // -
+//    int ICONST_1 = 4; // -
+//    int ICONST_2 = 5; // -
+//    int ICONST_3 = 6; // -
+//    int ICONST_4 = 7; // -
+//    int ICONST_5 = 8; // -
+    public static int getOldPermissionLevelRequirement(MethodNode methodNode){
+        for (AbstractInsnNode i : methodNode.instructions) {
+            if (i instanceof InsnNode insnNode){
+                System.out.println(insnNode.getOpcode());
+                var inst = insnNode.getOpcode();
+                int result = switch (inst){
+                    case Opcodes.ICONST_0 -> 0;
+                    case Opcodes.ICONST_1 -> 1;
+                    case Opcodes.ICONST_2 -> 2;
+                    case Opcodes.ICONST_3 -> 3;
+                    case Opcodes.ICONST_4 -> 4;
+                    case Opcodes.ICONST_5 -> 5;
+                    default -> -1;
+                };
+                if (result == -1)continue;
+                return result;
+            }
+        }
+        return -1;
+    }
 
-    /*
-    LDC ""
-    ALOAD 1
-    INVOKESTATIC net/zhuruoling/omms/controller/fabric/patch/PatchRuleManager.checkPermission (Ljava/lang/String;Lnet/minecraft/server/command/ServerCommandSource;)Z
-    IRETURN
-     */
+
     public static boolean patchMethod(String className, ClassNode node) {
         String clzName = MappedNames.nameOfClassServerCommandSource.replace('.','/');
         List<MethodNode> methodNodes = new ArrayList<>();
@@ -165,17 +188,27 @@ public class PatchUtil {
         for (MethodNode methodNode : methodNodes) {
             var clazzName = className.replace("/",".");
             if (PermissionRuleManager.INSTANCE.containsClass(clazzName)) {
-                methodNode.maxStack = 4;
                 var iter = methodNode.instructions.iterator();
+                iter.next();// L0
+                iter.next();// LINENUMBER 23 L0
+                iter.add(new FieldInsnNode(Opcodes.GETSTATIC,
+                        "net/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager",
+                        "INSTANCE",
+                        "Lnet/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager;"));
                 iter.add(new LdcInsnNode(clazzName));
                 iter.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 iter.add(new MethodInsnNode(
-                        Opcodes.INVOKESTATIC,
+                        Opcodes.INVOKEVIRTUAL,
                         "net/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager",
                         "checkPermission",
                         "(Ljava/lang/String;L%s;)Z".formatted(clzName)
                 ));
                 iter.add(new InsnNode(Opcodes.IRETURN));
+                int old = getOldPermissionLevelRequirement(methodNode);
+                if (old != -1){
+                    PermissionRuleManager.INSTANCE.putBackupPermissionValue(clazzName, old);
+                }
+                System.out.printf("%s require %d\n",className, old);
                 t = true;
             }
         }

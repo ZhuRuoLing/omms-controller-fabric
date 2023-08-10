@@ -2,6 +2,7 @@ package net.zhuruoling.omms.controller.fabric.permission;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.text.Text;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -16,13 +17,22 @@ public class PermissionRuleManager {
     private final List<PermissionRuleFile> permissionRuleFiles = new ArrayList<>();
     private final Map<String, List<PermissionRule>> permissionRules = new ConcurrentHashMap<>();
     private final Logger logger = LogUtils.getLogger();
-
+    private final Map<String, Integer> permissionRequirementBackup = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> permissionCheckStatusSwitch = new ConcurrentHashMap<>();
     public synchronized void loadFromRulesFile(File file) {
         permissionRuleFiles.add(PermissionRuleFile.readFromFile(file));
     }
 
     public boolean containsClass(String className){
         return permissionRules.containsKey(className);
+    }
+
+    public void putBackupPermissionValue(String clazzName, int value){
+        permissionRequirementBackup.put(clazzName, value);
+    }
+
+    public boolean isEnablePermissionCheckFor(String clazzName){
+        return permissionCheckStatusSwitch.containsKey(clazzName) && permissionCheckStatusSwitch.get(clazzName);
     }
 
     public void init() {
@@ -37,12 +47,23 @@ public class PermissionRuleManager {
         }
         permissionRules.forEach((s, a) -> {
             logger.info("Applying permission check patch to class %s".formatted(s));
-            PatchUtil.patchClass(s);
+            var result = PatchUtil.patchClass(s);
+            permissionCheckStatusSwitch.put(s, result);
         });
     }
+    public boolean fn(ServerCommandSource source){
+        return PermissionRuleManager.INSTANCE.checkPermission("114514", source);
+    }
 
-    private boolean checkPermission0(String className, ServerCommandSource commandSource) {
+    private boolean checkPermission(String className, ServerCommandSource commandSource) {
         if (commandSource.getEntity() == null)return true;
+        if (!isEnablePermissionCheckFor(className)){
+            if (!permissionRequirementBackup.containsKey(className)){
+                commandSource.sendError(Text.of("Cannot find permission requirement for command class %s.".formatted(className)));
+                throw new IllegalArgumentException("Cannot find permission requirement for command class %s.".formatted(className));
+            }
+            return commandSource.hasPermissionLevel(permissionRequirementBackup.get(className));
+        }
         if (permissionRules.containsKey(className)) {
             return permissionRules.get(className).stream().allMatch(it -> switch (it.permissionType) {
                 case PERMISSION_REQUIREMENT -> commandSource.hasPermissionLevel(it.permissionRequirement);
@@ -53,9 +74,5 @@ public class PermissionRuleManager {
             });
         }
         return true;
-    }
-
-    public static boolean checkPermission(String className, ServerCommandSource src) {
-        return INSTANCE.checkPermission0(className, src);
     }
 }
