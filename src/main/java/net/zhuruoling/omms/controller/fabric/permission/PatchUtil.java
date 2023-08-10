@@ -22,10 +22,9 @@ import java.util.function.BiFunction;
 // com.ishland.earlyloadingscreen.patch.PatchUtil
 // com.ishland.earlyloadingscreen.patch.FabricLoaderInvokePatch
 public class PatchUtil {
-    private static final Path transformerOutputPath = Path.of(".", ".omms-controller-fabric-transformer-output");
+    private static final Path transformerOutputPath = Path.of(".", ".omms-transformer-output");
     private static final Logger logger = LogUtils.getLogger();
     static Instrumentation instrumentation;
-
     private static final CopyOnWriteArrayList<BiFunction<String, ClassNode, Boolean>> transformerLists = new CopyOnWriteArrayList<>();
     private static final BiFunction<String, ClassNode, Boolean> PERMISSION_TRANSFORMER = PatchUtil::patchMethod;
 
