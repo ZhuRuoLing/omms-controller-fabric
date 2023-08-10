@@ -148,7 +148,6 @@ public class PatchUtil {
     public static int getOldPermissionLevelRequirement(MethodNode methodNode){
         for (AbstractInsnNode i : methodNode.instructions) {
             if (i instanceof InsnNode insnNode){
-                System.out.println(insnNode.getOpcode());
                 var inst = insnNode.getOpcode();
                 int result = switch (inst){
                     case Opcodes.ICONST_0 -> 0;
@@ -208,7 +207,6 @@ public class PatchUtil {
                 if (old != -1){
                     PermissionRuleManager.INSTANCE.putBackupPermissionValue(clazzName, old);
                 }
-                System.out.printf("%s require %d\n",className, old);
                 t = true;
             }
         }
