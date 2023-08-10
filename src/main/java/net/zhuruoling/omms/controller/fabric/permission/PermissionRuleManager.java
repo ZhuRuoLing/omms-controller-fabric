@@ -51,11 +51,8 @@ public class PermissionRuleManager {
             permissionCheckStatusSwitch.put(s, result);
         });
     }
-    public boolean fn(ServerCommandSource source){
-        return PermissionRuleManager.INSTANCE.checkPermission("114514", source);
-    }
 
-    private boolean checkPermission(String className, ServerCommandSource commandSource) {
+    public boolean checkPermission(String className, ServerCommandSource commandSource) {
         if (commandSource.getEntity() == null)return true;
         if (!isEnablePermissionCheckFor(className)){
             if (!permissionRequirementBackup.containsKey(className)){
