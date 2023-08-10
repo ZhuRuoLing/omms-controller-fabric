@@ -35,7 +35,7 @@ public class ShowJoinMotdMixin {
     private MinecraftServer server;
 
     @Inject(method = "onPlayerConnect", at = @At("RETURN"))
-    private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
+    private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, int latency, CallbackInfo ci) {
         if (!Config.INSTANCE.isEnableJoinMotd()) return;
         if (connection.getAddress() == null) {
             return;

@@ -99,7 +99,7 @@ public abstract class PlayerJoinMixin {
     }
 
     @Inject(method = "onPlayerConnect", at = @At("RETURN"))
-    void sendPlayerJoinMsg(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
+    void sendPlayerJoinMsg(ClientConnection connection, ServerPlayerEntity player, int latency, CallbackInfo ci) {
         if (connection.getAddress() == null) {
             return;
         }
