@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
@@ -149,23 +150,38 @@ fun Application.configureRouting() {
             post("/runCommand") {
                 val command = call.receiveText()
                 logger.debug("Command Input: $command")
-                val countDownLatch = CountDownLatch(1)
-                var data: CommandOutputData? = null
+                val future = CompletableFuture<CommandExecutionResult>()
                 minecraftServer.execute {
-                    val dispatcher: CommandDispatcher<ServerCommandSource> = minecraftServer.commandManager.dispatcher
                     val commandOutput = OmmsCommandOutput(minecraftServer)
                     val commandSource = commandOutput.createOmmsCommandSource()
-                    val results: ParseResults<ServerCommandSource> =
-                        dispatcher.parse(command, commandSource)
-                    minecraftServer.commandManager.execute(results, command)
-                    val commandResult = commandOutput.asString()
-                    data = CommandOutputData(getControllerName(), command, commandResult)
-                    countDownLatch.countDown()
+                    future.complete(
+                        try {
+                            minecraftServer.commandManager.dispatcher.execute(command, commandSource)
+                            val commandResult = commandOutput.asString()
+                            CommandExecutionResult(
+                                getControllerName(),
+                                command,
+                                commandResult.split("\n"),
+                                true,
+                                "",
+                                ""
+                            )
+                        } catch (e: Exception) {
+                            val commandResult = commandOutput.asString()
+                            CommandExecutionResult(
+                                getControllerName(),
+                                command,
+                                commandResult.split("\n"),
+                                false,
+                                e.message,
+                                e.stackTraceToString()
+                            )
+                        }
+                    )
                 }
                 runBlocking {
-                    countDownLatch.await()
                     call.respondText(ContentType.Text.Plain, status = HttpStatusCode.OK) {
-                        Util.gson.toJson(data!!)
+                        Util.gson.toJson(future.get()!!)
                     }
                 }
             }
