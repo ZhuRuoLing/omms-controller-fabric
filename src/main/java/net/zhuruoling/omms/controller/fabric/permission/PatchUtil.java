@@ -102,7 +102,7 @@ public class PatchUtil {
     public static void initTransformer() {
         Instrumentation inst = PatchUtil.instrumentation;
         if (inst == null) {
-            logger.warn("Instrumentation unavailable, entrypoint information will not be available");
+            logger.warn("Instrumentation unavailable, permission patch will not be available");
             return;
         }
         try {
@@ -176,6 +176,7 @@ public class PatchUtil {
                     if (methodInsnNode.owner.equals(clzName) &&
                             methodInsnNode.name.equals(MappedNames.nameOfMethodHasPermissionLevel) &&
                             methodInsnNode.desc.equals("(I)Z")) {
+
                         methodNodes.add(methodNode);
                     }
                 }
