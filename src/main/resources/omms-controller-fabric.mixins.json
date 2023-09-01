@@ -10,7 +10,8 @@
     "PlayerJoinMixin",
     "PlayerListHeaderMixin",
     "ServerMixin",
-    "ShowJoinMotdMixin"
+    "ShowJoinMotdMixin",
+    "ServerLoginNetworkHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

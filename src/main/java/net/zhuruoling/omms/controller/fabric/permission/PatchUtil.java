@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 import org.slf4j.Logger;
@@ -190,6 +191,23 @@ public class PatchUtil {
                 var iter = methodNode.instructions.iterator();
                 iter.next();// L0
                 iter.next();// LINENUMBER 23 L0
+                iter.add(new FieldInsnNode(Opcodes.GETSTATIC,
+                        "net/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager",
+                        "INSTANCE",
+                        "Lnet/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager;"));
+                iter.add(new LdcInsnNode(clazzName));
+                iter.add(new MethodInsnNode(
+                        Opcodes.INVOKEVIRTUAL,
+                        "net/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager",
+                        "isEnablePermissionCheckFor",
+                        "(Ljava/lang/String;)Z"
+                ));
+                var l1 = new LabelNode();
+                iter.add(new JumpInsnNode(Opcodes.IFNE, l1));
+                while (iter.hasNext()){
+                    if (iter.next().getOpcode() == Opcodes.IRETURN)break;
+                }
+                iter.add(l1);
                 iter.add(new FieldInsnNode(Opcodes.GETSTATIC,
                         "net/zhuruoling/omms/controller/fabric/permission/PermissionRuleManager",
                         "INSTANCE",

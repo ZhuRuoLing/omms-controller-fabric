@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 import net.zhuruoling.omms.controller.fabric.announcement.Announcement;
 import net.zhuruoling.omms.controller.fabric.config.Config;
@@ -35,6 +36,9 @@ public class Util {
     public static final Text LEFT_BRACKET = Text.of("[");
     public static final Text RIGHT_BRACKET = Text.of("]");
     public static final Text SPACE = Text.of(" ");
+    public static final Identifier AUTH_PACKET_CHANNEL = new Identifier("omms_auth","auth");
+
+    public static final int PACKET_ID = kotlin.random.Random.Default.nextInt();
 
     public static final UdpBroadcastSender.Target TARGET_CHAT = new UdpBroadcastSender.Target("224.114.51.4", 10086);
 

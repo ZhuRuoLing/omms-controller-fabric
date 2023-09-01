@@ -7,12 +7,14 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.zhuruoling.omms.controller.fabric.command.AnnouncementCommand;
 import net.zhuruoling.omms.controller.fabric.command.MenuCommand;
 import net.zhuruoling.omms.controller.fabric.command.QQCommand;
@@ -33,6 +35,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Objects;
+
+import static net.minecraft.server.command.CommandManager.literal;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
@@ -66,6 +70,15 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
     private static void registerMenuCommand() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
+        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(literal("water").executes(context -> {
+                var entry = Registries.BLOCK.get(new Identifier("minecraft","flowing_water"));
+                context.getSource().sendMessage(Text.of(entry.toString()));
+                var fluid = Registries.FLUID.get(new Identifier("minecraft","flowing_water"));
+                context.getSource().sendMessage(Text.of(fluid.toString()));
+                return 0;
+            }));
+        }));
     }
 
     @Override
