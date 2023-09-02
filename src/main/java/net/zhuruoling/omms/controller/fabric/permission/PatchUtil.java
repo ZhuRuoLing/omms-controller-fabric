@@ -221,10 +221,6 @@ public class PatchUtil {
                         "(Ljava/lang/String;L%s;)Z".formatted(clzName)
                 ));
                 iter.add(new InsnNode(Opcodes.IRETURN));
-                int old = getOldPermissionLevelRequirement(methodNode);
-                if (old != -1){
-                    PermissionRuleManager.INSTANCE.putBackupPermissionValue(clazzName, old);
-                }
                 t = true;
             }
         }

@@ -17,7 +17,6 @@ public class PermissionRuleManager {
     private final List<PermissionRuleFile> permissionRuleFiles = new ArrayList<>();
     private final Map<String, List<PermissionRule>> permissionRules = new ConcurrentHashMap<>();
     private final Logger logger = LogUtils.getLogger();
-    private final Map<String, Integer> permissionRequirementBackup = new ConcurrentHashMap<>();
     private final Map<String, Boolean> permissionCheckStatusSwitch = new ConcurrentHashMap<>();
 
     public synchronized void loadFromRulesFile(File file) {
@@ -26,10 +25,6 @@ public class PermissionRuleManager {
 
     public boolean containsClass(String className) {
         return permissionRules.containsKey(className);
-    }
-
-    public void putBackupPermissionValue(String clazzName, int value) {
-        permissionRequirementBackup.put(clazzName, value);
     }
 
     public boolean isEnablePermissionCheckFor(String clazzName) {
@@ -55,13 +50,6 @@ public class PermissionRuleManager {
 
     public boolean checkPermission(String className, ServerCommandSource commandSource) {
         if (commandSource.getEntity() == null) return true;
-        if (!isEnablePermissionCheckFor(className)) {
-            if (!permissionRequirementBackup.containsKey(className)) {
-                commandSource.sendError(Text.of("Cannot find permission requirement for command class %s.".formatted(className)));
-                throw new IllegalArgumentException("Cannot find permission requirement for command class %s.".formatted(className));
-            }
-            return commandSource.hasPermissionLevel(permissionRequirementBackup.get(className));
-        }
         if (permissionRules.containsKey(className)) {
             return permissionRules.get(className).stream().allMatch(it -> switch (it.permissionType) {
                 case PERMISSION_REQUIREMENT -> commandSource.hasPermissionLevel(it.permissionRequirement);

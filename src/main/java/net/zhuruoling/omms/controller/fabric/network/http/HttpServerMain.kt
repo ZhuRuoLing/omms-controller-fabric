@@ -98,42 +98,43 @@ fun sendToAllConnection(string: String) {
 fun Application.configureRouting() {
     val logger = LoggerFactory.getLogger("HttpRouting")
     routing {
-        webSocket("/") {
-            logger.debug("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
-            connectionList += this
-            synchronized(SharedVariable.logCache) {
-                runBlocking {
-                    send(SharedVariable.logCache.joinToString("\n"))
-                }
-            }
-            try {
-                for (frame in incoming) {
-                    frame as? Frame.Text ?: continue
-                    val received = frame.readText()
-                    minecraftServer.execute {
-                        try {
-                            logger.debug("Command $received from console ${Integer.toHexString(this.hashCode())}")
-                            minecraftServer.commandManager.dispatcher.execute(received, minecraftServer.commandSource)
-                        } catch (e: Exception) {
-                            if (e is CommandSyntaxException) {
-                                logger.error(e.message)
-                            } else throw e
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                logger.debug("Removing WebSocket Console ${Integer.toHexString(this.hashCode())}")
-                connectionList -= this
-            }
-        }
+
         get("/") {
             call.respondText(status = HttpStatusCode.OK) {
                 SharedVariable.sessionId
             }
         }
         authenticate("omms-simple-auth") {
+            webSocket("/") {
+                logger.debug("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
+                connectionList += this
+                synchronized(SharedVariable.logCache) {
+                    runBlocking {
+                        send(SharedVariable.logCache.joinToString("\n"))
+                    }
+                }
+                try {
+                    for (frame in incoming) {
+                        frame as? Frame.Text ?: continue
+                        val received = frame.readText()
+                        minecraftServer.execute {
+                            try {
+                                logger.debug("Command $received from console ${Integer.toHexString(this.hashCode())}")
+                                minecraftServer.commandManager.dispatcher.execute(received, minecraftServer.commandSource)
+                            } catch (e: Exception) {
+                                if (e is CommandSyntaxException) {
+                                    logger.error(e.message)
+                                } else throw e
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    logger.debug("Removing WebSocket Console ${Integer.toHexString(this.hashCode())}")
+                    connectionList -= this
+                }
+            }
             get("/status") {
                 logger.debug("Querying status.")
                 val status = Status(
@@ -146,6 +147,9 @@ fun Application.configureRouting() {
                 call.respondText {
                     Util.gson.toJson(status)
                 }
+            }
+            post("/applyRuleSetting") {
+
             }
             post("/runCommand") {
                 val command = call.receiveText()
