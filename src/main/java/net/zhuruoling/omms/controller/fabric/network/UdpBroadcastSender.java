@@ -103,15 +103,6 @@ public class UdpBroadcastSender extends Thread {
         public int hashCode() {
             return (address + port).hashCode();
         }
-
-        @Override
-        public String toString() {
-            return "Target{" +
-                    "address='" + address + '\'' +
-                    ", port=" + port +
-                    '}';
-        }
-
         public String address() {
             return address;
         }
