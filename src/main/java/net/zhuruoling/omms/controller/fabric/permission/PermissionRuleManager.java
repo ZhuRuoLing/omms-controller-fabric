@@ -2,7 +2,6 @@ package net.zhuruoling.omms.controller.fabric.permission;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -15,43 +14,45 @@ public class PermissionRuleManager {
     @SuppressWarnings("all")
     public static PermissionRuleManager INSTANCE = new PermissionRuleManager();
     private final List<PermissionRuleFile> permissionRuleFiles = new ArrayList<>();
-    private final Map<String, List<PermissionRule>> permissionRules = new ConcurrentHashMap<>();
+    private final Map<String, PermissionRules> permissionRuleMap = new ConcurrentHashMap<>();
     private final Logger logger = LogUtils.getLogger();
-    private final Map<String, Boolean> permissionCheckStatusSwitch = new ConcurrentHashMap<>();
 
     public synchronized void loadFromRulesFile(File file) {
         permissionRuleFiles.add(PermissionRuleFile.readFromFile(file));
     }
 
     public boolean containsClass(String className) {
-        return permissionRules.containsKey(className);
+        return permissionRuleMap.containsKey(className);
     }
 
     public boolean isEnablePermissionCheckFor(String clazzName) {
-        return permissionCheckStatusSwitch.containsKey(clazzName) && permissionCheckStatusSwitch.get(clazzName);
+        return permissionRuleMap.containsKey(clazzName) && permissionRuleMap.get(clazzName).getStatus();
     }
 
     public void init() {
         for (PermissionRuleFile ruleFile : permissionRuleFiles) {
             logger.info("Loading rule file %s".formatted(ruleFile.name));
             for (PermissionRule rule : ruleFile.permissionRules) {
-                if (!permissionRules.containsKey(rule.className)) {
-                    permissionRules.put(rule.className, new ArrayList<>());
+                if (!permissionRuleMap.containsKey(rule.className)) {
+                    permissionRuleMap.put(rule.className, new PermissionRules(new ArrayList<>(), true));
                 }
-                permissionRules.get(rule.className).add(rule);
+                permissionRuleMap.get(rule.className).rules.add(rule);
             }
         }
-        permissionRules.forEach((s, a) -> {
+        permissionRuleMap.forEach((s, a) -> {
             logger.info("Applying permission check patch to class %s".formatted(s));
             var result = PatchUtil.patchClass(s);
-            permissionCheckStatusSwitch.put(s, result);
+            permissionRuleMap.computeIfPresent(s, ((s1, permissionRules) -> {
+                permissionRules.setStatus(result);
+                return permissionRules;
+            }));
         });
     }
 
     public boolean checkPermission(String className, ServerCommandSource commandSource) {
         if (commandSource.getEntity() == null) return true;
-        if (permissionRules.containsKey(className)) {
-            return permissionRules.get(className).stream().allMatch(it -> switch (it.permissionType) {
+        if (permissionRuleMap.containsKey(className)) {
+            return permissionRuleMap.get(className).rules.stream().allMatch(it -> switch (it.permissionType) {
                 case PERMISSION_REQUIREMENT -> commandSource.hasPermissionLevel(it.permissionRequirement);
                 case PLAYER_BLACKLIST -> commandSource.isExecutedByPlayer() &&
                         !it.playerAllowed.contains(commandSource.getPlayer().getGameProfile().getName());

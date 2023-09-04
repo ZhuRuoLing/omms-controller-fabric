@@ -148,7 +148,13 @@ fun Application.configureRouting() {
                     Util.gson.toJson(status)
                 }
             }
-            post("/applyRuleSetting") {
+            route("/permissionRule") {
+                post("/switch") {
+
+                }
+                get("list") {
+
+                }
 
             }
             post("/runCommand") {
