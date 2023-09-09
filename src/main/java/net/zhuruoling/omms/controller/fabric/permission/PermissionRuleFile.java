@@ -1,5 +1,8 @@
 package net.zhuruoling.omms.controller.fabric.permission;
 
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

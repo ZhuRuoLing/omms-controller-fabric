@@ -2,6 +2,7 @@ package net.zhuruoling.omms.controller.fabric.permission;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.command.ServerCommandSource;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -26,7 +27,7 @@ public class PermissionRuleManager {
     }
 
     public boolean isEnablePermissionCheckFor(String clazzName) {
-        return permissionRuleMap.containsKey(clazzName) && permissionRuleMap.get(clazzName).getStatus();
+        return permissionRuleMap.containsKey(clazzName) && permissionRuleMap.get(clazzName).getStatus() && !permissionRuleMap.get(clazzName).rules.isEmpty();
     }
 
     public void init() {
@@ -40,13 +41,17 @@ public class PermissionRuleManager {
             }
         }
         permissionRuleMap.forEach((s, a) -> {
-            logger.info("Applying permission check patch to class %s".formatted(s));
-            var result = PatchUtil.patchClass(s);
-            permissionRuleMap.computeIfPresent(s, ((s1, permissionRules) -> {
-                permissionRules.setStatus(result);
-                return permissionRules;
-            }));
+            applyPermissionRule(s);
         });
+    }
+
+    private void applyPermissionRule(String className) {
+        logger.info("Applying permission check patch to class %s".formatted(className));
+        var result = PatchUtil.patchClass(className);
+        permissionRuleMap.computeIfPresent(className, ((s1, permissionRules) -> {
+            permissionRules.setStatus(result);
+            return permissionRules;
+        }));
     }
 
     public boolean checkPermission(String className, ServerCommandSource commandSource) {
@@ -61,5 +66,15 @@ public class PermissionRuleManager {
             });
         }
         return true;
+    }
+
+    public Map<String, PermissionRules> getPermissionRuleMap() {
+        return permissionRuleMap;
+    }
+
+    public boolean createNewRule(@NotNull String clazz) {
+        permissionRuleMap.put(clazz, new PermissionRules(new ArrayList<>(), false));
+        applyPermissionRule(clazz);
+        return false;
     }
 }

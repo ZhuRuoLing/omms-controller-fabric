@@ -23,6 +23,8 @@ import net.zhuruoling.omms.controller.fabric.config.Config.getControllerName
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable
 import net.zhuruoling.omms.controller.fabric.network.ControllerTypes
 import net.zhuruoling.omms.controller.fabric.network.Status
+import net.zhuruoling.omms.controller.fabric.permission.PermissionRuleManager
+import net.zhuruoling.omms.controller.fabric.permission.PermissionRules
 import net.zhuruoling.omms.controller.fabric.util.CommandOutputData
 import net.zhuruoling.omms.controller.fabric.util.OmmsCommandOutput
 import net.zhuruoling.omms.controller.fabric.util.Util
@@ -138,24 +140,56 @@ fun Application.configureRouting() {
             get("/status") {
                 logger.debug("Querying status.")
                 val status = Status(
-                    getControllerName(),
-                    ControllerTypes.FABRIC,
-                    minecraftServer.currentPlayerCount,
-                    minecraftServer.maxPlayerCount,
-                    listOf(*minecraftServer.playerNames)
+                        getControllerName(),
+                        ControllerTypes.FABRIC,
+                        minecraftServer.currentPlayerCount,
+                        minecraftServer.maxPlayerCount,
+                        listOf(*minecraftServer.playerNames)
                 )
                 call.respondText {
                     Util.gson.toJson(status)
                 }
             }
             route("/permissionRule") {
-                post("/switch") {
-
+                get("/switch/{operation?}") {
+                    val operation = when(call.parameters["operation"]){
+                        "on" -> true
+                        "off" -> false
+                        null -> return@get call.respondText(
+                                "Missing operation",
+                                status = HttpStatusCode.BadRequest
+                        )
+                        else -> return@get call.respondText(
+                                "Wrong operation value: ${call.parameters["operation"]}",
+                                status = HttpStatusCode.BadRequest
+                        )
+                    }
+                    val clazz = call.request.queryParameters["className"]?: return@get call.respondText(
+                            "Missing className",
+                            status = HttpStatusCode.BadRequest
+                    )
+                    val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status
+                            ?: PermissionRuleManager.INSTANCE.createNewRule(clazz)
+                    PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]!!.status = operation
+                    return@get call.respondText{
+                        if (status) "ENABLED" else "DISABLED"
+                    }
                 }
                 get("list") {
+                    return@get call.respondText {
+                        Util.gson.toJson(PermissionRuleManager.INSTANCE.permissionRuleMap)
+                    }
+                }
+                post("status") {
+                    val clazz = call.receiveText()
+                    val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status ?: return@post call.respondText(status = HttpStatusCode.NotAcceptable){""}
+                    return@post call.respondText{
+                        if (status) "ENABLED" else "DISABLED"
+                    }
+                }
+                post("modify") {
 
                 }
-
             }
             post("/runCommand") {
                 val command = call.receiveText()
@@ -165,28 +199,28 @@ fun Application.configureRouting() {
                     val commandOutput = OmmsCommandOutput(minecraftServer)
                     val commandSource = commandOutput.createOmmsCommandSource()
                     future.complete(
-                        try {
-                            minecraftServer.commandManager.dispatcher.execute(command, commandSource)
-                            val commandResult = commandOutput.asString()
-                            CommandExecutionResult(
-                                getControllerName(),
-                                command,
-                                commandResult.split("\n"),
-                                true,
-                                "",
-                                ""
-                            )
-                        } catch (e: Exception) {
-                            val commandResult = commandOutput.asString()
-                            CommandExecutionResult(
-                                getControllerName(),
-                                command,
-                                commandResult.split("\n"),
-                                false,
-                                e.message,
-                                e.stackTraceToString()
-                            )
-                        }
+                            try {
+                                minecraftServer.commandManager.dispatcher.execute(command, commandSource)
+                                val commandResult = commandOutput.asString()
+                                CommandExecutionResult(
+                                        getControllerName(),
+                                        command,
+                                        commandResult.split("\n"),
+                                        true,
+                                        "",
+                                        ""
+                                )
+                            } catch (e: Exception) {
+                                val commandResult = commandOutput.asString()
+                                CommandExecutionResult(
+                                        getControllerName(),
+                                        command,
+                                        commandResult.split("\n"),
+                                        false,
+                                        e.message,
+                                        e.stackTraceToString()
+                                )
+                            }
                     )
                 }
                 runBlocking {

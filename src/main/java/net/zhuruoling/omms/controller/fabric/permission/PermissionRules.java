@@ -25,4 +25,9 @@ public class PermissionRules {
     public void setStatus(boolean status) {
         this.status = status;
     }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
 }

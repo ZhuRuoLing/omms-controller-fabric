@@ -38,5 +38,23 @@ public class PermissionRule {
         };
     }
 
+    public String getClassName() {
+        return className;
+    }
 
+    public String getClassQualifier() {
+        return classQualifier;
+    }
+
+    public PermissionType getPermissionType() {
+        return permissionType;
+    }
+
+    public List<String> getPlayerAllowed() {
+        return playerAllowed;
+    }
+
+    public int getPermissionRequirement() {
+        return permissionRequirement;
+    }
 }
