@@ -1,7 +1,5 @@
 package net.zhuruoling.omms.controller.fabric.network.http
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.ParseResults
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -13,27 +11,22 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.*
-import io.ktor.util.reflect.*
-import io.ktor.utils.io.concurrent.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.runBlocking
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.command.ServerCommandSource
 import net.zhuruoling.omms.controller.fabric.config.Config.getControllerName
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable
 import net.zhuruoling.omms.controller.fabric.network.ControllerTypes
 import net.zhuruoling.omms.controller.fabric.network.Status
+import net.zhuruoling.omms.controller.fabric.network.http.PermissionModificationData.Type.*
 import net.zhuruoling.omms.controller.fabric.permission.PermissionRuleManager
-import net.zhuruoling.omms.controller.fabric.permission.PermissionRules
-import net.zhuruoling.omms.controller.fabric.util.CommandOutputData
 import net.zhuruoling.omms.controller.fabric.util.OmmsCommandOutput
-import net.zhuruoling.omms.controller.fabric.util.Util
+import net.zhuruoling.omms.controller.fabric.util.Util.gson
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
 lateinit var httpServer: ApplicationEngine
@@ -122,7 +115,10 @@ fun Application.configureRouting() {
                         minecraftServer.execute {
                             try {
                                 logger.debug("Command $received from console ${Integer.toHexString(this.hashCode())}")
-                                minecraftServer.commandManager.dispatcher.execute(received, minecraftServer.commandSource)
+                                minecraftServer.commandManager.dispatcher.execute(
+                                    received,
+                                    minecraftServer.commandSource
+                                )
                             } catch (e: Exception) {
                                 if (e is CommandSyntaxException) {
                                     logger.error(e.message)
@@ -140,55 +136,82 @@ fun Application.configureRouting() {
             get("/status") {
                 logger.debug("Querying status.")
                 val status = Status(
-                        getControllerName(),
-                        ControllerTypes.FABRIC,
-                        minecraftServer.currentPlayerCount,
-                        minecraftServer.maxPlayerCount,
-                        listOf(*minecraftServer.playerNames)
+                    getControllerName(),
+                    ControllerTypes.FABRIC,
+                    minecraftServer.currentPlayerCount,
+                    minecraftServer.maxPlayerCount,
+                    listOf(*minecraftServer.playerNames)
                 )
                 call.respondText {
-                    Util.gson.toJson(status)
+                    gson.toJson(status)
                 }
             }
             route("/permissionRule") {
-                get("/switch/{operation?}") {
-                    val operation = when(call.parameters["operation"]){
-                        "on" -> true
-                        "off" -> false
-                        null -> return@get call.respondText(
-                                "Missing operation",
-                                status = HttpStatusCode.BadRequest
-                        )
-                        else -> return@get call.respondText(
-                                "Wrong operation value: ${call.parameters["operation"]}",
-                                status = HttpStatusCode.BadRequest
-                        )
-                    }
-                    val clazz = call.request.queryParameters["className"]?: return@get call.respondText(
-                            "Missing className",
-                            status = HttpStatusCode.BadRequest
-                    )
-                    val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status
-                            ?: PermissionRuleManager.INSTANCE.createNewRule(clazz)
-                    PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]!!.status = operation
-                    return@get call.respondText{
-                        if (status) "ENABLED" else "DISABLED"
-                    }
-                }
                 get("list") {
+                    val clazz = call.request.queryParameters["className"] ?: return@get call.respondText(
+                        status = HttpStatusCode.OK
+                    ) {
+                        gson.toJson(PermissionRuleManager.INSTANCE.permissionRuleMap)
+                    }
+                    val rule = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz] ?: return@get
+                    call.respondText(status = HttpStatusCode.BadRequest) {
+                        gson.toJson(PermissionModificationResult(false, "Class not exist.", null))
+                    }
                     return@get call.respondText {
-                        Util.gson.toJson(PermissionRuleManager.INSTANCE.permissionRuleMap)
+                        gson.toJson(PermissionModificationResult(true, "", rule))
                     }
                 }
                 post("status") {
                     val clazz = call.receiveText()
-                    val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status ?: return@post call.respondText(status = HttpStatusCode.NotAcceptable){""}
-                    return@post call.respondText{
-                        if (status) "ENABLED" else "DISABLED"
+                    val status =
+                        PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status ?: return@post call.respondText(
+                            status = HttpStatusCode.BadRequest
+                        ) { gson.toJson(PermissionModificationResult(false, "Class not exist.", false)) }
+                    return@post call.respondText {
+                        gson.toJson(PermissionModificationResult(true, "", status))
                     }
                 }
                 post("modify") {
+                    val content = call.receiveText()
+                    val dt = gson.fromJson(content, PermissionModificationData::class.java)
+                    try{
+                        when (dt.type) {
+                            ENABLE -> {
+                                PermissionRuleManager.INSTANCE.enableCheckFor(dt.className)
+                            }
 
+                            REMOVE -> {
+                                PermissionRuleManager.INSTANCE.disableCheckFor(dt.className)
+                            }
+
+                            ADD_RULE -> {
+                                PermissionRuleManager.INSTANCE.addRule(dt.className, dt.rule)
+                            }
+
+                            REMOVE_RULE -> {
+                                PermissionRuleManager.INSTANCE.removeRule(dt.className, dt.removeAt)
+                            }
+
+                            else -> {
+                                return@post call.respondText(
+                                    status = HttpStatusCode.BadRequest
+                                ) {
+                                    gson.toJson(PermissionModificationResult(false, "Type not specified.", false))
+                                }
+                            }
+                        }
+                        return@post call.respondText(
+                            status = HttpStatusCode.OK
+                        ) {
+                            gson.toJson(PermissionModificationResult(true, "", null))
+                        }
+                    }catch (e:Exception){
+                        return@post call.respondText(
+                            status = HttpStatusCode.InternalServerError
+                        ) {
+                            gson.toJson(PermissionModificationResult(false, "Server Internal Error", e.stackTraceToString()))
+                        }
+                    }
                 }
             }
             post("/runCommand") {
@@ -199,33 +222,33 @@ fun Application.configureRouting() {
                     val commandOutput = OmmsCommandOutput(minecraftServer)
                     val commandSource = commandOutput.createOmmsCommandSource()
                     future.complete(
-                            try {
-                                minecraftServer.commandManager.dispatcher.execute(command, commandSource)
-                                val commandResult = commandOutput.asString()
-                                CommandExecutionResult(
-                                        getControllerName(),
-                                        command,
-                                        commandResult.split("\n"),
-                                        true,
-                                        "",
-                                        ""
-                                )
-                            } catch (e: Exception) {
-                                val commandResult = commandOutput.asString()
-                                CommandExecutionResult(
-                                        getControllerName(),
-                                        command,
-                                        commandResult.split("\n"),
-                                        false,
-                                        e.message,
-                                        e.stackTraceToString()
-                                )
-                            }
+                        try {
+                            minecraftServer.commandManager.dispatcher.execute(command, commandSource)
+                            val commandResult = commandOutput.asString()
+                            CommandExecutionResult(
+                                getControllerName(),
+                                command,
+                                commandResult.split("\n"),
+                                true,
+                                "",
+                                ""
+                            )
+                        } catch (e: Exception) {
+                            val commandResult = commandOutput.asString()
+                            CommandExecutionResult(
+                                getControllerName(),
+                                command,
+                                commandResult.split("\n"),
+                                false,
+                                e.message,
+                                e.stackTraceToString()
+                            )
+                        }
                     )
                 }
                 runBlocking {
                     call.respondText(ContentType.Text.Plain, status = HttpStatusCode.OK) {
-                        Util.gson.toJson(future.get()!!)
+                        gson.toJson(future.get()!!)
                     }
                 }
             }

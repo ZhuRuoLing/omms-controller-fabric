@@ -3,6 +3,7 @@ package net.zhuruoling.omms.controller.fabric.permission;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.command.ServerCommandSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -14,12 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PermissionRuleManager {
     @SuppressWarnings("all")
     public static PermissionRuleManager INSTANCE = new PermissionRuleManager();
-    private final List<PermissionRuleFile> permissionRuleFiles = new ArrayList<>();
+    private PermissionRuleFile permissionRuleFile;
     private final Map<String, PermissionRules> permissionRuleMap = new ConcurrentHashMap<>();
     private final Logger logger = LogUtils.getLogger();
 
     public synchronized void loadFromRulesFile(File file) {
-        permissionRuleFiles.add(PermissionRuleFile.readFromFile(file));
+        permissionRuleFile = PermissionRuleFile.readFromFile(file);
     }
 
     public boolean containsClass(String className) {
@@ -31,18 +32,14 @@ public class PermissionRuleManager {
     }
 
     public void init() {
-        for (PermissionRuleFile ruleFile : permissionRuleFiles) {
-            logger.info("Loading rule file %s".formatted(ruleFile.name));
-            for (PermissionRule rule : ruleFile.permissionRules) {
-                if (!permissionRuleMap.containsKey(rule.className)) {
-                    permissionRuleMap.put(rule.className, new PermissionRules(new ArrayList<>(), true));
-                }
-                permissionRuleMap.get(rule.className).rules.add(rule);
+        logger.info("Loading rule file %s".formatted(permissionRuleFile.name));
+        for (PermissionRule rule : permissionRuleFile.permissionRules) {
+            if (!permissionRuleMap.containsKey(rule.className)) {
+                permissionRuleMap.put(rule.className, new PermissionRules(new ArrayList<>(), true));
             }
+            permissionRuleMap.get(rule.className).rules.add(rule);
         }
-        permissionRuleMap.forEach((s, a) -> {
-            applyPermissionRule(s);
-        });
+        permissionRuleMap.forEach((s, a) -> applyPermissionRule(s));
     }
 
     private void applyPermissionRule(String className) {
@@ -72,9 +69,40 @@ public class PermissionRuleManager {
         return permissionRuleMap;
     }
 
-    public boolean createNewRule(@NotNull String clazz) {
-        permissionRuleMap.put(clazz, new PermissionRules(new ArrayList<>(), false));
+    public void createNewRule(@NotNull String clazz) {
+        permissionRuleMap.put(clazz, new PermissionRules(new ArrayList<>(), true));
         applyPermissionRule(clazz);
-        return false;
+    }
+
+    public void enableCheckFor(String clazz){
+        if (permissionRuleMap.containsKey(clazz)){
+            permissionRuleMap.get(clazz).setStatus(true);
+        }else {
+            createNewRule(clazz);
+        }
+    }
+
+    public void addRule(String clazz, PermissionRule rule){
+        synchronized (permissionRuleMap){
+            permissionRuleMap.get(clazz).rules.add(rule);
+        }
+    }
+
+    public void removeRule(String clazz, int at){
+        synchronized (permissionRuleMap){
+            permissionRuleMap.get(clazz).rules.remove(at);
+        }
+    }
+
+    public void save() {
+        this.permissionRuleFile.save();
+    }
+
+    public void disableCheckFor(String clazz) {
+        if (permissionRuleMap.containsKey(clazz)){
+            permissionRuleMap.get(clazz).setStatus(false);
+        }else {
+            createNewRule(clazz);
+        }
     }
 }

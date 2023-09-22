@@ -71,11 +71,13 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     private static void registerMenuCommand() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> new MenuCommand().register(dispatcher));
         CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(literal("water").executes(context -> {
-                var entry = Registries.BLOCK.get(new Identifier("minecraft","flowing_water"));
-                context.getSource().sendMessage(Text.of(entry.toString()));
-                var fluid = Registries.FLUID.get(new Identifier("minecraft","flowing_water"));
-                context.getSource().sendMessage(Text.of(fluid.toString()));
+            dispatcher.register(literal("save").executes(context -> {
+                var src = context.getSource();
+                try{
+                    PermissionRuleManager.INSTANCE.save();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
                 return 0;
             }));
         }));
@@ -84,18 +86,14 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
     @Override
     public void onInitializeServer() {
         Config.INSTANCE.load();
-        if (Config.INSTANCE.usePermissionConfig()) {
+        if (!Config.INSTANCE.getPermissionConfig().isEmpty()) {
             MappedNames.mapNames();
             PatchUtil.init();
             PatchUtil.initTransformer();
-            Arrays.stream(FabricLoader.getInstance().getConfigDir().toFile().listFiles())
-                    .filter(it -> it.getName().endsWith(".pr"))
-                    .forEach(file -> {
-                        PermissionRuleManager.INSTANCE.loadFromRulesFile(file);
-                    });
+            var path = FabricLoader.getInstance().getConfigDir().resolve(Config.INSTANCE.getPermissionConfig());
+            PermissionRuleManager.INSTANCE.loadFromRulesFile(path.toFile());
             PermissionRuleManager.INSTANCE.init();
         }
-
 
         if (Config.INSTANCE.isEnableJoinMotd()) {
             registerMenuCommand();
@@ -137,7 +135,7 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
                         })));
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            Thread launchThread = new Thread(null, () -> onServerStart(server), "OMMS-OnServerStart");
+            Thread launchThread = new Thread(null, () -> onServerStart(server), "OMMS-LauncherThread");
             launchThread.start();
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(OmmsControllerFabric::onServerStop);
@@ -145,7 +143,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         SharedVariable.ready = true;
 
         LogUtils.getLogger().info("Hello World!");
-
     }
 
     private void onServerStart(MinecraftServer server) {
