@@ -6,6 +6,7 @@ import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -35,7 +36,7 @@ public class ShowJoinMotdMixin {
     private MinecraftServer server;
 
     @Inject(method = "onPlayerConnect", at = @At("RETURN"))
-    private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
+    private void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci) {
         if (!Config.INSTANCE.isEnableJoinMotd()) return;
         if (connection.getAddress() == null) {
             return;

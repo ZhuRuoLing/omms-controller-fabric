@@ -5,16 +5,15 @@ import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.minecraft.util.Pair;
 import net.minecraft.util.UserCache;
 import net.zhuruoling.omms.controller.fabric.config.Config;
 import net.zhuruoling.omms.controller.fabric.config.SharedVariable;
 import net.zhuruoling.omms.controller.fabric.util.Util;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -42,10 +41,6 @@ public abstract class PlayerJoinMixin {
     @Shadow
     @Final
     private MinecraftServer server;
-
-    @Shadow
-    @Nullable
-    public abstract ServerPlayerEntity getPlayer(String name);
 
     @Inject(method = "checkCanJoin", at = @At("HEAD"), cancellable = true)
     private void checkCanJoin(SocketAddress address, GameProfile profile, CallbackInfoReturnable<Text> cir) {
@@ -99,7 +94,7 @@ public abstract class PlayerJoinMixin {
     }
 
     @Inject(method = "onPlayerConnect", at = @At("RETURN"))
-    void sendPlayerJoinMsg(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
+    void sendPlayerJoinMsg(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci) {
         if (connection.getAddress() == null) {
             return;
         }
