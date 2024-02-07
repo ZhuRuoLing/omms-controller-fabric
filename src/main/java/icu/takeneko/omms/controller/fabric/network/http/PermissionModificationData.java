@@ -1,6 +1,6 @@
-package net.zhuruoling.omms.controller.fabric.network.http;
+package icu.takeneko.omms.controller.fabric.network.http;
 
-import net.zhuruoling.omms.controller.fabric.permission.PermissionRule;
+import icu.takeneko.omms.controller.fabric.permission.PermissionRule;
 
 public class PermissionModificationData {
     enum Type {

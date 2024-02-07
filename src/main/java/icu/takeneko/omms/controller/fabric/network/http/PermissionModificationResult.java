@@ -1,4 +1,4 @@
-package net.zhuruoling.omms.controller.fabric.network.http;
+package icu.takeneko.omms.controller.fabric.network.http;
 
 public class PermissionModificationResult {
     boolean status;

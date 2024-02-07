@@ -25,6 +25,7 @@ import icu.takeneko.omms.controller.fabric.network.Status
 import icu.takeneko.omms.controller.fabric.permission.PermissionRuleManager
 import icu.takeneko.omms.controller.fabric.util.OmmsCommandOutput
 import icu.takeneko.omms.controller.fabric.util.Util
+import icu.takeneko.omms.controller.fabric.util.Util.gson
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
@@ -168,7 +169,7 @@ fun Application.configureRouting() {
                             status = HttpStatusCode.BadRequest
                     )
                     val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status
-                            ?: PermissionRuleManager.INSTANCE.createNewRule(clazz)
+                            ?: run { PermissionRuleManager.INSTANCE.createNewRule(clazz);false }
                     PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]!!.status = operation
                     return@get call.respondText{
                         if (status) "ENABLED" else "DISABLED"
@@ -203,19 +204,19 @@ fun Application.configureRouting() {
                     val dt = gson.fromJson(content, PermissionModificationData::class.java)
                     try{
                         when (dt.type) {
-                            ENABLE -> {
+                            PermissionModificationData.Type.ENABLE -> {
                                 PermissionRuleManager.INSTANCE.enableCheckFor(dt.className)
                             }
 
-                            REMOVE -> {
+                            PermissionModificationData.Type.REMOVE -> {
                                 PermissionRuleManager.INSTANCE.disableCheckFor(dt.className)
                             }
 
-                            ADD_RULE -> {
+                            PermissionModificationData.Type.ADD_RULE -> {
                                 PermissionRuleManager.INSTANCE.addRule(dt.className, dt.rule)
                             }
 
-                            REMOVE_RULE -> {
+                            PermissionModificationData.Type.REMOVE_RULE -> {
                                 PermissionRuleManager.INSTANCE.removeRule(dt.className, dt.removeAt)
                             }
 
