@@ -1,5 +1,4 @@
 package icu.takeneko.omms.controller.fabric.permission;
-package net.zhuruoling.omms.controller.fabric.permission;
 
 import kotlin.collections.CollectionsKt;
 import net.minecraft.block.BlockState;
