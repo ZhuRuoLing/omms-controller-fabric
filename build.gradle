@@ -28,6 +28,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modImplementation "net.fabricmc:fabric-language-kotlin:1.9.0+kotlin.1.8.0"
+    implementation("net.fabricmc:mapping-io:0.1.8")
+
 
     shadowInclude implementation('io.ktor:ktor-server-auth-jvm:2.2.2')
     shadowInclude implementation('io.ktor:ktor-server-core-jvm:2.2.2')
@@ -66,7 +68,7 @@ shadowJar {
         rename { "${it}_${project.archivesBaseName}" }
     }
     exclude "/kotlin*"
-    relocate "net.bytebuddy", "net.zhuruoling.omms.deps.bytebuddy"
+    relocate "net.bytebuddy", "icu.takeneko.omms.deps.bytebuddy"
 }
 
 task("remapShadowJar", type: net.fabricmc.loom.task.RemapJarTask, dependsOn: shadowJar) {
