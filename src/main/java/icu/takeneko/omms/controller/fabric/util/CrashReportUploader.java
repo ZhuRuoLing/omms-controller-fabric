@@ -11,7 +11,8 @@ import java.nio.charset.Charset;
 @SuppressWarnings("all")
 public class CrashReportUploader {
     public static void upload(String content){
-        String url = "http://%s:%d/controller/crashReport/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort());        HttpClient client = HttpClient.newHttpClient();
+        String url = "http://%s:%d/controller/crashReport/upload".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort());
+        HttpClient client = HttpClient.newHttpClient();
        try {
             HttpRequest request = HttpRequest.newBuilder()
                     .POST(HttpRequest.BodyPublishers.ofString(content))

@@ -21,7 +21,6 @@ public class PlayerChatMixin {
     private void handleMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
         if (!Config.INSTANCE.isEnableChatBridge()) return;
         String raw = packet.chatMessage();
-        //System.out.println(raw);
         if (!raw.startsWith("/")) {
             Util.sendChatBroadcast(raw, this.player.getName().getString());
         }

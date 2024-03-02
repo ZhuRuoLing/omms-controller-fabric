@@ -1,6 +1,7 @@
 package icu.takeneko.omms.controller.fabric.mixin;
 
 import icu.takeneko.omms.controller.fabric.config.SharedVariable;
+import icu.takeneko.omms.controller.fabric.network.NetworkUtilKt;
 import icu.takeneko.omms.controller.fabric.util.Util;
 import net.minecraft.util.crash.CrashReport;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public abstract class CrashReportMixin {
         LOGGER.info("Uploading crash report to OMMS Central Server.");
         var content = makeCrashReport();
         try {
-            Util.submitCrashReport(content);
+            NetworkUtilKt.uploadCrashReport(content);
         } catch (Exception e) {
             e.printStackTrace();
         }

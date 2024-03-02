@@ -1,17 +1,15 @@
 package icu.takeneko.omms.controller.fabric.mixin;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
 import icu.takeneko.omms.controller.fabric.config.Config;
 import icu.takeneko.omms.controller.fabric.config.SharedVariable;
+import icu.takeneko.omms.controller.fabric.network.NetworkUtilKt;
 import icu.takeneko.omms.controller.fabric.util.Util;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
 import net.minecraft.util.UserCache;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -23,10 +21,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.net.ConnectException;
 import java.net.SocketAddress;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 
 
@@ -50,48 +45,10 @@ public abstract class PlayerJoinMixin {
             return;
         }
         if (!Config.INSTANCE.isEnableWhitelist()) return;
-        try {
-            String player = profile.getName();
-            String url = "http://%s:%d/whitelist/queryAll/%s".formatted(Config.INSTANCE.getHttpQueryAddress(), Config.INSTANCE.getHttpQueryPort(), player);
-            var pair = Util.invokeHttpGetRequest(url);
-            if (pair.getLeft() != 200) {
-                var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
-                cir.setReturnValue(text);
-                return;
-            }
-            String result = pair.getRight();
-            if (result != null) {
-                if (result.isEmpty()) {
-                    var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
-                    cir.setReturnValue(text);
-                    return;
-                }
-                Gson gson = new GsonBuilder().serializeNulls().create();
-                String[] whitelists = gson.fromJson(result, String[].class);
-                if (Objects.isNull(whitelists)) {
-                    var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
-                    cir.setReturnValue(text);
-                    return;
-                }
-                if (Arrays.stream(whitelists).toList().contains(Config.INSTANCE.getWhitelistName())) {
-                    LOGGER.info("Successfully authed player %s".formatted(player));
-
-                } else {
-                    LOGGER.info("Cannot auth player %s".formatted(player));
-                    cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
-                }
-            } else {
-                cir.setReturnValue(Texts.toText(() -> "You are not in whitelist."));
-            }
-        } catch (Exception e) {
-            if (e instanceof ConnectException) {
-                LOGGER.error("Cannot Connect to OMMS Central server, reason: %s".formatted(e.toString()));
-            } else {
-                e.printStackTrace();
-                LOGGER.error("Failed to auth player.");
-            }
-            var text = Texts.toText(() -> "Cannot auth with OMMS Central server.");
-            cir.setReturnValue(text);
+        String player = profile.getName();
+        Text authResult = NetworkUtilKt.authPlayer(player);
+        if (authResult != null){
+            cir.setReturnValue(authResult);
         }
     }
 
