@@ -22,8 +22,8 @@ public class ServerLoginNetworkHandlerMixin {
 
     @Inject(method = "onKey", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/network/ClientConnection;setupEncryption(Ljavax/crypto/Cipher;Ljavax/crypto/Cipher;)V"))
     void sendRequest(LoginKeyC2SPacket packet, CallbackInfo ci){
-        var p = new LoginQueryRequestS2CPacket(Util.PACKET_ID,Util.AUTH_PACKET_CHANNEL, PacketByteBufs.create());
-        this.connection.send(p);
+//        var p = new LoginQueryRequestS2CPacket(Util.PACKET_ID,Util.AUTH_PACKET_CHANNEL, PacketByteBufs.create());
+//        this.connection.send(p);
     }
 
 

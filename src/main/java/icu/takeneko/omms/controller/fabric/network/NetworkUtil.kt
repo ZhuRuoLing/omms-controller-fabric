@@ -6,8 +6,10 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import net.minecraft.text.Style
 import net.minecraft.text.Text
@@ -19,6 +21,9 @@ private val httpClient by lazy {
         engine {
             threadsCount = 4
             pipelining = true
+        }
+        install(ContentNegotiation){
+            json()
         }
         install(Auth) {
             basic {
@@ -56,7 +61,7 @@ fun authPlayer(playerName: String): Text? {
                 throw RuntimeException("Server returned non 200 status: ${resp.status.value}")
             } else {
                 val list = resp.body<List<String>>()
-                if (playerName !in list) {
+                if (Config.getWhitelistName() !in list) {
                     Text.translatable("multiplayer.disconnect.not_whitelisted").copyContentOnly().setStyle(Style.EMPTY.withColor(Formatting.RED))
                 } else {
                     logger.info("Successfully authed player $playerName")

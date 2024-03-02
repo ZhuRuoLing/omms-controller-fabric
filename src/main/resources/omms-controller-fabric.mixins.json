@@ -9,9 +9,7 @@
     "PlayerDisconnectMixin",
     "PlayerJoinMixin",
     "PlayerListHeaderMixin",
-    "ServerMixin",
-    "ShowJoinMotdMixin",
-    "ServerLoginNetworkHandlerMixin"
+    "ShowJoinMotdMixin"
   ],
   "injectors": {
     "defaultRequire": 1

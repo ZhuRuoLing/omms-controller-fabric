@@ -42,16 +42,18 @@ public class ShowJoinMotdMixin {
             String playerName = player.getName().copyContentOnly().getString();
             try {
                 var servers = NetworkUtilKt.queryPlayerInAllWhitelist(playerName);
-                List<Text> serverEntries = new ArrayList<>(servers.stream().map(Text::of).toList());
+                List<Text> serverEntries = new ArrayList<>();
+
                 String currentServer = Config.INSTANCE.getWhitelistName();
+
                 for (String server : servers) {
                     boolean isCurrentServer = Objects.equals(currentServer, server);
                     ServerMapping mapping = Config.INSTANCE.getServerMappings().get(server);
                     if (mapping == null) {
                         serverEntries.add(Util.fromServerString(server, null, false, true));
-                        continue;
+                    } else {
+                        serverEntries.add(Util.fromServerString(mapping.getDisplayName(), mapping.getProxyName(), isCurrentServer, false));
                     }
-                    serverEntries.add(Util.fromServerString(mapping.getDisplayName(), mapping.getProxyName(), isCurrentServer, false));
                 }
                 Text serverText = Texts.join(serverEntries, Util.SPACE);
                 player.sendMessage(Text.of("----------Welcome to %s server!----------".formatted(Config.INSTANCE.getControllerName())), false);
@@ -59,7 +61,7 @@ public class ShowJoinMotdMixin {
                 player.sendMessage(serverText, false);
                 player.sendMessage(Text.of("Type \"/announcement latest\" to fetch latest announcement."), false);
                 server.getPlayerManager().broadcast(Text.of("<%s> o/".formatted(playerName)), false);
-            }catch (RuntimeException ignored){
+            } catch (RuntimeException ignored) {
 
             }
         } catch (Exception e) {

@@ -64,20 +64,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
         SharedVariable.getExecutorService().shutdown();
     }
 
-    private static void registerMenuCommand() {
-        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(literal("save").executes(context -> {
-                var src = context.getSource();
-                try{
-                    PermissionRuleManager.INSTANCE.save();
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-                return 0;
-            }));
-        }));
-    }
-
     @Override
     public void onInitializeServer() {
         Config.INSTANCE.load();
@@ -88,10 +74,6 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             var path = FabricLoader.getInstance().getConfigDir().resolve(Config.INSTANCE.getPermissionConfig());
             PermissionRuleManager.INSTANCE.loadFromRulesFile(path.toFile());
             PermissionRuleManager.INSTANCE.init();
-        }
-
-        if (Config.INSTANCE.isEnableJoinMotd()) {
-            registerMenuCommand();
         }
 
         if (Config.INSTANCE.isEnableRemoteControl()) {
@@ -133,7 +115,10 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             Thread launchThread = new Thread(null, () -> onServerStart(server), "OMMS-LauncherThread");
             launchThread.start();
         });
-        ServerLifecycleEvents.SERVER_STOPPING.register(OmmsControllerFabric::onServerStop);
+        ServerLifecycleEvents.SERVER_STOPPING.register((server -> {
+            Util.sendChatBroadcast("Stopping the server", "Server");
+            onServerStop(server);
+        }));
         ServerLifecycleEvents.SERVER_STOPPED.register(OmmsControllerFabric::onServerStop);
         SharedVariable.ready = true;
 
@@ -166,6 +151,9 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             sender.setDaemon(true);
             sender.start();
             SharedVariable.setSender(sender);
+        }
+        if (Config.INSTANCE.isEnableChatBridge()){
+            Util.sendChatBroadcast("Starting the server", "Server");
         }
     }
 

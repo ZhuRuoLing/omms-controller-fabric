@@ -48,6 +48,9 @@ dependencies {
     shadowInclude implementation("io.ktor:ktor-client-websockets:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-auth:$ktor_version")
     shadowInclude implementation("io.ktor:ktor-client-auth-jvm:$ktor_version")
+    shadowInclude implementation("io.ktor:ktor-client-auth-jvm:$ktor_version")
+    shadowInclude implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    shadowInclude implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     shadowInclude implementation('net.bytebuddy:byte-buddy-agent:1.14.0')
 }
 

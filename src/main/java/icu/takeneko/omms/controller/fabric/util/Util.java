@@ -150,7 +150,7 @@ public class Util {
                 Text.of("<").copyContentOnly(),
                 Text.of(broadcast.getPlayer()).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
                 LEFT_BRACKET.copyContentOnly(),
-                Text.of(broadcast.getServer()).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
+                Text.of(broadcast.getServer().equals("OMMS CENTRAL") ? "SERVER" : broadcast.getServer()).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)/*.withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))*/),
                 Text.of("]>").copyContentOnly(),
                 Text.of(broadcast.getContent()).copyContentOnly()
         );
