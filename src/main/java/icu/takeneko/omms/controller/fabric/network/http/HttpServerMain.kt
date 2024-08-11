@@ -1,8 +1,19 @@
 package icu.takeneko.omms.controller.fabric.network.http
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.ParseResults
+import com.google.gson.JsonParser
 import com.mojang.brigadier.exceptions.CommandSyntaxException
+import com.mojang.datafixers.util.Either
+import com.mojang.logging.LogUtils
+import com.mojang.serialization.Codec
+import com.mojang.serialization.JsonOps
+import icu.takeneko.omms.controller.fabric.config.Config.getControllerName
+import icu.takeneko.omms.controller.fabric.config.SharedVariable
+import icu.takeneko.omms.controller.fabric.network.ControllerTypes
+import icu.takeneko.omms.controller.fabric.network.Status
+import icu.takeneko.omms.controller.fabric.network.http.ws.*
+import icu.takeneko.omms.controller.fabric.permission.PermissionRuleManager
+import icu.takeneko.omms.controller.fabric.util.OmmsCommandOutput
+import icu.takeneko.omms.controller.fabric.util.Util.gson
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -13,19 +24,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.*
-import io.ktor.util.reflect.*
-import io.ktor.utils.io.concurrent.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.runBlocking
 import net.minecraft.server.MinecraftServer
-import icu.takeneko.omms.controller.fabric.config.Config.getControllerName
-import icu.takeneko.omms.controller.fabric.config.SharedVariable
-import icu.takeneko.omms.controller.fabric.network.ControllerTypes
-import icu.takeneko.omms.controller.fabric.network.Status
-import icu.takeneko.omms.controller.fabric.permission.PermissionRuleManager
-import icu.takeneko.omms.controller.fabric.util.OmmsCommandOutput
-import icu.takeneko.omms.controller.fabric.util.Util
-import icu.takeneko.omms.controller.fabric.util.Util.gson
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
@@ -36,7 +37,12 @@ import kotlin.concurrent.thread
 lateinit var httpServer: ApplicationEngine
 lateinit var httpServerThread: Thread
 private lateinit var minecraftServer: MinecraftServer
+private val logger = LogUtils.getLogger()
 val connectionList: MutableSet<DefaultWebSocketSession> = Collections.synchronizedSet(LinkedHashSet())
+private val packetCodec: Codec<Either<WSStatusPacket, WSStringPacket>> = Codec.either(
+    WSStatusPacket.CODEC,
+    WSStringPacket.CODEC
+)
 
 fun serverMain(port: Int, server: MinecraftServer): Thread {
     minecraftServer = server
@@ -83,7 +89,7 @@ fun sendToAllConnection(string: String) {
     runBlocking {
         try {
             connectionList.forEach {
-                it.send(string)
+                it.sendPacket(WSStringPacket(PacketType.LOG, listOf(string)))
             }
         } catch (e: Exception) {
             if (e !is CancellationException) {
@@ -97,7 +103,6 @@ fun sendToAllConnection(string: String) {
 fun Application.configureRouting() {
     val logger = LoggerFactory.getLogger("HttpRouting")
     routing {
-
         get("/") {
             call.respondText(status = HttpStatusCode.OK) {
                 SharedVariable.sessionId
@@ -105,30 +110,25 @@ fun Application.configureRouting() {
         }
         authenticate("omms-simple-auth") {
             webSocket("/") {
-                logger.debug("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
+                logger.info("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
                 connectionList += this
+                val handler = WSPacketHandlerImpl(minecraftServer, this)
                 synchronized(SharedVariable.logCache) {
                     runBlocking {
-                        send(SharedVariable.logCache.joinToString("\n"))
+                        sendPacket(WSStringPacket(PacketType.LOG, SharedVariable.logCache))
                     }
                 }
                 try {
                     for (frame in incoming) {
                         frame as? Frame.Text ?: continue
-                        val received = frame.readText()
-                        minecraftServer.execute {
-                            try {
-                                logger.debug("Command $received from console ${Integer.toHexString(this.hashCode())}")
-                                minecraftServer.commandManager.dispatcher.execute(
-                                    received,
-                                    minecraftServer.commandSource
-                                )
-                            } catch (e: Exception) {
-                                if (e is CommandSyntaxException) {
-                                    logger.error(e.message)
-                                } else throw e
-                            }
-                        }
+                        val s = frame.readText()
+                        val jElem = JsonParser.parseString(s)
+                        packetCodec.decode(JsonOps.INSTANCE, jElem)
+                            .getOrThrow(false, logger::error)
+                            .first
+                            .map(WSPacket::cast, WSPacket::cast)
+                            .handle(handler)
+                        if (handler.shouldDisconnect) break
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -152,26 +152,27 @@ fun Application.configureRouting() {
             }
             route("/permissionRule") {
                 get("/switch/{operation?}") {
-                    val operation = when(call.parameters["operation"]){
+                    val operation = when (call.parameters["operation"]) {
                         "on" -> true
                         "off" -> false
                         null -> return@get call.respondText(
-                                "Missing operation",
-                                status = HttpStatusCode.BadRequest
+                            "Missing operation",
+                            status = HttpStatusCode.BadRequest
                         )
+
                         else -> return@get call.respondText(
-                                "Wrong operation value: ${call.parameters["operation"]}",
-                                status = HttpStatusCode.BadRequest
+                            "Wrong operation value: ${call.parameters["operation"]}",
+                            status = HttpStatusCode.BadRequest
                         )
                     }
-                    val clazz = call.request.queryParameters["className"]?: return@get call.respondText(
-                            "Missing className",
-                            status = HttpStatusCode.BadRequest
+                    val clazz = call.request.queryParameters["className"] ?: return@get call.respondText(
+                        "Missing className",
+                        status = HttpStatusCode.BadRequest
                     )
                     val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status
-                            ?: run { PermissionRuleManager.INSTANCE.createNewRule(clazz);false }
+                        ?: run { PermissionRuleManager.INSTANCE.createNewRule(clazz);false }
                     PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]!!.status = operation
-                    return@get call.respondText{
+                    return@get call.respondText {
                         if (status) "ENABLED" else "DISABLED"
                     }
                 }
@@ -202,7 +203,7 @@ fun Application.configureRouting() {
                 post("modify") {
                     val content = call.receiveText()
                     val dt = gson.fromJson(content, PermissionModificationData::class.java)
-                    try{
+                    try {
                         when (dt.type) {
                             PermissionModificationData.Type.ENABLE -> {
                                 PermissionRuleManager.INSTANCE.enableCheckFor(dt.className)
@@ -233,11 +234,17 @@ fun Application.configureRouting() {
                         ) {
                             gson.toJson(PermissionModificationResult(true, "", null))
                         }
-                    }catch (e:Exception){
+                    } catch (e: Exception) {
                         return@post call.respondText(
                             status = HttpStatusCode.InternalServerError
                         ) {
-                            gson.toJson(PermissionModificationResult(false, "Server Internal Error", e.stackTraceToString()))
+                            gson.toJson(
+                                PermissionModificationResult(
+                                    false,
+                                    "Server Internal Error",
+                                    e.stackTraceToString()
+                                )
+                            )
                         }
                     }
                 }
@@ -282,6 +289,17 @@ fun Application.configureRouting() {
             }
         }
     }
+}
+
+suspend fun WebSocketSession.sendPacket(s: WSPacket) {
+    val e = packetCodec.encodeStart(
+        JsonOps.INSTANCE, when (s) {
+            is WSStatusPacket -> Either.left(s)
+            is WSStringPacket -> Either.right(s)
+            else -> return
+        }
+    ).getOrThrow(false, logger::error).toString()
+    send(e)
 }
 
 fun toMultiLineErrorMessage(s: String): List<String> {
