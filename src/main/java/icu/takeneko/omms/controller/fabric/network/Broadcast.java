@@ -9,7 +9,7 @@ public class Broadcast {
     private String server;
     private String player;
     private String content;
-    private long timeMillis;
+    private long timeMillis = System.currentTimeMillis();
 
     public Broadcast(String player, String content) {
         this.server = Config.INSTANCE.getControllerName();
