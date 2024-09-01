@@ -1,7 +1,6 @@
 package icu.takeneko.omms.controller.fabric.network.http
 
 import com.google.gson.JsonParser
-import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.datafixers.util.Either
 import com.mojang.logging.LogUtils
 import com.mojang.serialization.Codec

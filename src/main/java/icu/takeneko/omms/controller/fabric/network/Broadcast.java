@@ -4,11 +4,12 @@ import icu.takeneko.omms.controller.fabric.util.Util;
 import icu.takeneko.omms.controller.fabric.config.Config;
 
 public class Broadcast {
-    public String id;
-    String channel;
-    String server;
-    String player;
-    String content;
+    private String id;
+    private String channel;
+    private String server;
+    private String player;
+    private String content;
+    private long timeMillis;
 
     public Broadcast(String player, String content) {
         this.server = Config.INSTANCE.getControllerName();
@@ -26,43 +27,19 @@ public class Broadcast {
         this.id = id;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public String getChannel() {
         return channel;
-    }
-
-    public void setChannel(String channel) {
-        this.channel = channel;
     }
 
     public String getServer() {
         return server;
     }
 
-    public void setServer(String server) {
-        this.server = server;
-    }
-
     public String getPlayer() {
         return player;
     }
 
-    public void setPlayer(String player) {
-        this.player = player;
-    }
-
     public String getContent() {
         return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
     }
 }
