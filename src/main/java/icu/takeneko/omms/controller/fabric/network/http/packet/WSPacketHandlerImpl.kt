@@ -1,4 +1,4 @@
-package icu.takeneko.omms.controller.fabric.network.http.ws
+package icu.takeneko.omms.controller.fabric.network.http.packet
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.logging.LogUtils
@@ -15,17 +15,17 @@ class WSPacketHandlerImpl(
 ) : WSPacketHandler {
     var shouldDisconnect = false
 
-    override fun onConnect() {
+    override fun onConnect(version: Int) {
         runBlocking {
-            session.sendPacket(WSStatusPacket(PacketType.CONNECT, 1))
+            session.sendPacket(WSAckPacket(1, WSAckPacket.Action.CONNECT))
         }
     }
 
     override fun onDisconnect() {
-        shouldDisconnect = true
         runBlocking {
-            session.sendPacket(WSStatusPacket(PacketType.DISCONNECT))
+            session.sendPacket(WSAckPacket(1, WSAckPacket.Action.DISCONNECT))
         }
+        shouldDisconnect = true
     }
 
     override fun onCommand(line: String) {

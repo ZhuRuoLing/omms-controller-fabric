@@ -1,15 +1,14 @@
 package icu.takeneko.omms.controller.fabric.network.http
 
-import com.google.gson.JsonParser
-import com.mojang.datafixers.util.Either
 import com.mojang.logging.LogUtils
-import com.mojang.serialization.Codec
-import com.mojang.serialization.JsonOps
+import icu.takeneko.omms.central.controller.console.ws.packet.PacketRegistry
 import icu.takeneko.omms.controller.fabric.config.Config.getControllerName
 import icu.takeneko.omms.controller.fabric.config.SharedVariable
 import icu.takeneko.omms.controller.fabric.network.ControllerTypes
 import icu.takeneko.omms.controller.fabric.network.Status
-import icu.takeneko.omms.controller.fabric.network.http.ws.*
+import icu.takeneko.omms.controller.fabric.network.http.packet.WSLogPacket
+import icu.takeneko.omms.controller.fabric.network.http.packet.WSPacket
+import icu.takeneko.omms.controller.fabric.network.http.packet.WSPacketHandlerImpl
 import icu.takeneko.omms.controller.fabric.permission.PermissionRuleManager
 import icu.takeneko.omms.controller.fabric.util.OmmsCommandOutput
 import icu.takeneko.omms.controller.fabric.util.Util.gson
@@ -38,10 +37,7 @@ lateinit var httpServerThread: Thread
 private lateinit var minecraftServer: MinecraftServer
 private val logger = LogUtils.getLogger()
 val connectionList: MutableSet<DefaultWebSocketSession> = Collections.synchronizedSet(LinkedHashSet())
-private val packetCodec: Codec<Either<WSStatusPacket, WSStringPacket>> = Codec.either(
-    WSStatusPacket.CODEC,
-    WSStringPacket.CODEC
-)
+
 
 fun serverMain(port: Int, server: MinecraftServer): Thread {
     minecraftServer = server
@@ -88,7 +84,7 @@ fun sendToAllConnection(string: String) {
     runBlocking {
         try {
             connectionList.forEach {
-                it.sendPacket(WSStringPacket(PacketType.LOG, listOf(string)))
+                it.sendPacket(WSLogPacket(listOf(string)))
             }
         } catch (e: Exception) {
             if (e !is CancellationException) {
@@ -114,19 +110,13 @@ fun Application.configureRouting() {
                 val handler = WSPacketHandlerImpl(minecraftServer, this)
                 synchronized(SharedVariable.logCache) {
                     runBlocking {
-                        sendPacket(WSStringPacket(PacketType.LOG, SharedVariable.logCache))
+                        sendPacket(WSLogPacket(SharedVariable.logCache))
                     }
                 }
                 try {
                     for (frame in incoming) {
                         frame as? Frame.Text ?: continue
-                        val s = frame.readText()
-                        val jElem = JsonParser.parseString(s)
-                        packetCodec.decode(JsonOps.INSTANCE, jElem)
-                            .getOrThrow(false, logger::error)
-                            .first
-                            .map(WSPacket::cast, WSPacket::cast)
-                            .handle(handler)
+                        PacketRegistry.decodePacket(frame.readText()).handle(handler)
                         if (handler.shouldDisconnect) break
                     }
                 } catch (e: Exception) {
@@ -290,15 +280,8 @@ fun Application.configureRouting() {
     }
 }
 
-suspend fun WebSocketSession.sendPacket(s: WSPacket) {
-    val e = packetCodec.encodeStart(
-        JsonOps.INSTANCE, when (s) {
-            is WSStatusPacket -> Either.left(s)
-            is WSStringPacket -> Either.right(s)
-            else -> return
-        }
-    ).getOrThrow(false, logger::error).toString()
-    send(e)
+suspend fun WebSocketSession.sendPacket(s: WSPacket<*>) {
+    send(PacketRegistry.encodePacket(s))
 }
 
 fun toMultiLineErrorMessage(s: String): List<String> {

@@ -28,6 +28,7 @@ import icu.takeneko.omms.controller.fabric.network.UdpReceiver;
 import icu.takeneko.omms.controller.fabric.network.WebsocketChatClient;
 import icu.takeneko.omms.controller.fabric.permission.MappedNames;
 import icu.takeneko.omms.controller.fabric.permission.PatchUtil;
+import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -35,6 +36,12 @@ import java.util.Objects;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
+
+    public static final int CLIENT_VERSION = 1;
+
+    public static Identifier of(String path){
+        return Identifier.of("omms", path);
+    }
 
     //private final Logger logger = LogUtils.getLogger();
     @SuppressWarnings("deprecated")
