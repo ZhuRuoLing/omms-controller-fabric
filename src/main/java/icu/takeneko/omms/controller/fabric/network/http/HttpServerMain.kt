@@ -1,7 +1,7 @@
 package icu.takeneko.omms.controller.fabric.network.http
 
 import com.mojang.logging.LogUtils
-import icu.takeneko.omms.central.controller.console.ws.packet.PacketRegistry
+import icu.takeneko.omms.controller.fabric.network.http.packet.PacketRegistry
 import icu.takeneko.omms.controller.fabric.config.Config.getControllerName
 import icu.takeneko.omms.controller.fabric.config.SharedVariable
 import icu.takeneko.omms.controller.fabric.network.ControllerTypes

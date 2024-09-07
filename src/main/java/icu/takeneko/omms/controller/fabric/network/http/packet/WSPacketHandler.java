@@ -8,4 +8,6 @@ public interface WSPacketHandler {
     void onDisconnect();
 
     void onCommand(String line);
+
+    void onCompletionRequest(String requestId,String partialCommand, int cursorPos);
 }

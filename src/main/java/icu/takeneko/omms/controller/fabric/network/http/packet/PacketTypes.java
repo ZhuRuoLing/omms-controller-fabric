@@ -3,7 +3,6 @@ package icu.takeneko.omms.controller.fabric.network.http.packet;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
-import icu.takeneko.omms.central.controller.console.ws.packet.PacketRegistry;
 import icu.takeneko.omms.controller.fabric.OmmsControllerFabric;
 import net.minecraft.util.Identifier;
 
@@ -34,6 +33,18 @@ public class PacketTypes {
             OmmsControllerFabric.of("disconnect"),
             WSDisconnectPacket.class,
             WSDisconnectPacket.CODEC
+    );
+
+    public static final PacketType<WSCompletionRequestPacket> COMPLETION_REQUEST = register(
+        OmmsControllerFabric.of("completion_request"),
+        WSCompletionRequestPacket.class,
+        WSCompletionRequestPacket.CODEC
+    );
+
+    public static final PacketType<WSCompletionResultPacket> COMPLETION_RESULT = register(
+        OmmsControllerFabric.of("completion_result"),
+        WSCompletionResultPacket.class,
+        WSCompletionResultPacket.CODEC
     );
 
 

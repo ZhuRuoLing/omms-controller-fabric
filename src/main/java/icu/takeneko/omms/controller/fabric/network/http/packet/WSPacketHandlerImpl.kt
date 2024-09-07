@@ -43,4 +43,17 @@ class WSPacketHandlerImpl(
             }
         }
     }
+
+    override fun onCompletionRequest(requestId: String, partialCommand: String, cursorPos: Int) {
+        val dispatcher = minecraftServer.commandManager.dispatcher
+        val parseResult = dispatcher.parse(partialCommand, minecraftServer.commandSource)
+        println(parseResult.reader.totalLength)
+        println(cursorPos)
+        dispatcher.getCompletionSuggestions(parseResult, cursorPos)
+            .thenAccept {
+                runBlocking {
+                    session.sendPacket(WSCompletionResultPacket(requestId, it.list.map { it.text }))
+                }
+            }
+    }
 }

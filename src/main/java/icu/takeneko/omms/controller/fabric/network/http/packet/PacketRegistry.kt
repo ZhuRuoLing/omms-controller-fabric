@@ -1,7 +1,5 @@
-package icu.takeneko.omms.central.controller.console.ws.packet
+package icu.takeneko.omms.controller.fabric.network.http.packet
 
-import icu.takeneko.omms.controller.fabric.network.http.packet.PacketType
-import icu.takeneko.omms.controller.fabric.network.http.packet.WSPacket
 import io.ktor.util.*
 import net.minecraft.util.Identifier
 
@@ -18,11 +16,11 @@ object PacketRegistry {
     }
 
     fun register(key: Identifier, value: PacketType<*>) {
-        if (this.get(key) != null) {
+        if (get(key) != null) {
             throw IllegalArgumentException("Duplicate packetType: $key")
         }
-        this.registry[key] = value
-        this.reversedRegistry[value] = key
+        registry[key] = value
+        reversedRegistry[value] = key
     }
 
     fun encodePacket(packet: WSPacket<*>): String {
