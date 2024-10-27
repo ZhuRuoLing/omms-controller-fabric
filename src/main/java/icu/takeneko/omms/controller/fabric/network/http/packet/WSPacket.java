@@ -1,24 +1,22 @@
 package icu.takeneko.omms.controller.fabric.network.http.packet;
 
 
-public abstract class WSPacket<T extends WSPacket<T>> {
-    private final PacketType<T> packetType;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import icu.takeneko.omms.controller.fabric.util.serization.DispatchedCodec;
+import net.minecraft.util.Identifier;
 
-    protected WSPacket(PacketType<T> packetType) {
-        this.packetType = packetType;
-    }
+public interface WSPacket {
+    @SuppressWarnings("unchecked")
+    Codec<WSPacket> CODEC = new DispatchedCodec<>(
+        PacketRegistry.INSTANCE,
+        it -> (MapCodec<WSPacket>) it.codec(),
+        ins -> PacketRegistry.INSTANCE.reversedLookup().get((MapCodec<WSPacket>) ins.codec()),
+        Identifier.CODEC,
+        "type"
+    ).codec();
 
-    public String encodeSelf() {
-        return packetType.encode((T) this);
-    }
+    void handle(WSPacketHandler handler);
 
-    abstract public void handle(WSPacketHandler handler);
-
-    public static <T extends WSPacket<T>> WSPacket<? extends T> cast(T packet) {
-        return packet;
-    }
-
-    public PacketType<T> getPacketType() {
-        return packetType;
-    }
+    MapCodec<? extends WSPacket> codec();
 }

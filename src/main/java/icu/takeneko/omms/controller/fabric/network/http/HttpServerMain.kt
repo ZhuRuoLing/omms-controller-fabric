@@ -1,23 +1,20 @@
 package icu.takeneko.omms.controller.fabric.network.http
 
 import com.mojang.logging.LogUtils
-import icu.takeneko.omms.controller.fabric.network.http.packet.PacketRegistry
+import com.mojang.serialization.JsonOps
 import icu.takeneko.omms.controller.fabric.config.Config.getControllerName
 import icu.takeneko.omms.controller.fabric.config.SharedVariable
-import icu.takeneko.omms.controller.fabric.network.ControllerTypes
-import icu.takeneko.omms.controller.fabric.network.Status
 import icu.takeneko.omms.controller.fabric.network.http.packet.WSLogPacket
 import icu.takeneko.omms.controller.fabric.network.http.packet.WSPacket
-import icu.takeneko.omms.controller.fabric.network.http.packet.WSPacketHandlerImpl
-import icu.takeneko.omms.controller.fabric.permission.PermissionRuleManager
-import icu.takeneko.omms.controller.fabric.util.OmmsCommandOutput
-import icu.takeneko.omms.controller.fabric.util.Util.gson
+import icu.takeneko.omms.controller.fabric.network.http.route.permissionRule
+import icu.takeneko.omms.controller.fabric.network.http.route.runCommand
+import icu.takeneko.omms.controller.fabric.network.http.route.status
+import icu.takeneko.omms.controller.fabric.network.http.route.webSocketConsole
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -29,7 +26,6 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
 import kotlin.concurrent.thread
 
 lateinit var httpServer: ApplicationEngine
@@ -70,7 +66,7 @@ fun Application.configureAuthentication() {
         basic(name = "omms-simple-auth") {
             realm = "Access to the client"
             validate {
-                return@validate if ((it.name == getControllerName()) && (it.password == asSalted(getControllerName())))
+                return@validate if ((it.name == getControllerName()) && (it.password == getControllerName().encodeBase64()))
                     UserIdPrincipal(it.name + it.password)
                 else null
             }
@@ -78,7 +74,23 @@ fun Application.configureAuthentication() {
     }
 }
 
-fun asSalted(original: String) = original.encodeBase64() + "WTF IS IT".encodeBase64()
+fun Application.configureRouting() {
+    val logger = LoggerFactory.getLogger("HttpRouting")
+    routing {
+        get("/") {
+            call.respondText(status = HttpStatusCode.OK) {
+                SharedVariable.sessionId
+            }
+        }
+        authenticate("omms-simple-auth") {
+            webSocketConsole(logger, ::getServer)
+            status(logger, ::getServer)
+            runCommand(logger, ::getServer)
+
+            permissionRule()
+        }
+    }
+}
 
 fun sendToAllConnection(string: String) {
     runBlocking {
@@ -94,200 +106,12 @@ fun sendToAllConnection(string: String) {
     }
 }
 
-
-fun Application.configureRouting() {
-    val logger = LoggerFactory.getLogger("HttpRouting")
-    routing {
-        get("/") {
-            call.respondText(status = HttpStatusCode.OK) {
-                SharedVariable.sessionId
-            }
-        }
-        authenticate("omms-simple-auth") {
-            webSocket("/") {
-                logger.info("New WebSocket Console ${Integer.toHexString(this.hashCode())} attached.")
-                connectionList += this
-                val handler = WSPacketHandlerImpl(minecraftServer, this)
-                synchronized(SharedVariable.logCache) {
-                    runBlocking {
-                        sendPacket(WSLogPacket(SharedVariable.logCache))
-                    }
-                }
-                try {
-                    for (frame in incoming) {
-                        frame as? Frame.Text ?: continue
-                        PacketRegistry.decodePacket(frame.readText()).handle(handler)
-                        if (handler.shouldDisconnect) break
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } finally {
-                    logger.debug("Removing WebSocket Console ${Integer.toHexString(this.hashCode())}")
-                    connectionList -= this
-                }
-            }
-            get("/status") {
-                logger.debug("Querying status.")
-                val status = Status(
-                    getControllerName(),
-                    ControllerTypes.FABRIC,
-                    minecraftServer.currentPlayerCount,
-                    minecraftServer.maxPlayerCount,
-                    listOf(*minecraftServer.playerNames)
-                )
-                call.respondText {
-                    gson.toJson(status)
-                }
-            }
-            route("/permissionRule") {
-                get("/switch/{operation?}") {
-                    val operation = when (call.parameters["operation"]) {
-                        "on" -> true
-                        "off" -> false
-                        null -> return@get call.respondText(
-                            "Missing operation",
-                            status = HttpStatusCode.BadRequest
-                        )
-
-                        else -> return@get call.respondText(
-                            "Wrong operation value: ${call.parameters["operation"]}",
-                            status = HttpStatusCode.BadRequest
-                        )
-                    }
-                    val clazz = call.request.queryParameters["className"] ?: return@get call.respondText(
-                        "Missing className",
-                        status = HttpStatusCode.BadRequest
-                    )
-                    val status = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status
-                        ?: run { PermissionRuleManager.INSTANCE.createNewRule(clazz);false }
-                    PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]!!.status = operation
-                    return@get call.respondText {
-                        if (status) "ENABLED" else "DISABLED"
-                    }
-                }
-                get("list") {
-                    val clazz = call.request.queryParameters["className"] ?: return@get call.respondText(
-                        status = HttpStatusCode.OK
-                    ) {
-                        gson.toJson(PermissionRuleManager.INSTANCE.permissionRuleMap)
-                    }
-                    val rule = PermissionRuleManager.INSTANCE.permissionRuleMap[clazz] ?: return@get
-                    call.respondText(status = HttpStatusCode.BadRequest) {
-                        gson.toJson(PermissionModificationResult(false, "Class not exist.", null))
-                    }
-                    return@get call.respondText {
-                        gson.toJson(PermissionModificationResult(true, "", rule))
-                    }
-                }
-                post("status") {
-                    val clazz = call.receiveText()
-                    val status =
-                        PermissionRuleManager.INSTANCE.permissionRuleMap[clazz]?.status ?: return@post call.respondText(
-                            status = HttpStatusCode.BadRequest
-                        ) { gson.toJson(PermissionModificationResult(false, "Class not exist.", false)) }
-                    return@post call.respondText {
-                        gson.toJson(PermissionModificationResult(true, "", status))
-                    }
-                }
-                post("modify") {
-                    val content = call.receiveText()
-                    val dt = gson.fromJson(content, PermissionModificationData::class.java)
-                    try {
-                        when (dt.type) {
-                            PermissionModificationData.Type.ENABLE -> {
-                                PermissionRuleManager.INSTANCE.enableCheckFor(dt.className)
-                            }
-
-                            PermissionModificationData.Type.REMOVE -> {
-                                PermissionRuleManager.INSTANCE.disableCheckFor(dt.className)
-                            }
-
-                            PermissionModificationData.Type.ADD_RULE -> {
-                                PermissionRuleManager.INSTANCE.addRule(dt.className, dt.rule)
-                            }
-
-                            PermissionModificationData.Type.REMOVE_RULE -> {
-                                PermissionRuleManager.INSTANCE.removeRule(dt.className, dt.removeAt)
-                            }
-
-                            else -> {
-                                return@post call.respondText(
-                                    status = HttpStatusCode.BadRequest
-                                ) {
-                                    gson.toJson(PermissionModificationResult(false, "Type not specified.", false))
-                                }
-                            }
-                        }
-                        return@post call.respondText(
-                            status = HttpStatusCode.OK
-                        ) {
-                            gson.toJson(PermissionModificationResult(true, "", null))
-                        }
-                    } catch (e: Exception) {
-                        return@post call.respondText(
-                            status = HttpStatusCode.InternalServerError
-                        ) {
-                            gson.toJson(
-                                PermissionModificationResult(
-                                    false,
-                                    "Server Internal Error",
-                                    e.stackTraceToString()
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-            post("/runCommand") {
-                val command = call.receiveText()
-                logger.debug("Command Input: $command")
-                val future = CompletableFuture<CommandExecutionResult>()
-                minecraftServer.execute {
-                    val commandOutput = OmmsCommandOutput(minecraftServer)
-                    val commandSource = commandOutput.createOmmsCommandSource()
-                    future.complete(
-                        try {
-                            minecraftServer.commandManager.dispatcher.execute(command, commandSource)
-                            val commandResult = commandOutput.asString()
-                            CommandExecutionResult(
-                                getControllerName(),
-                                command,
-                                commandResult.split("\n"),
-                                true,
-                                "",
-                                ""
-                            )
-                        } catch (e: Exception) {
-                            val commandResult = commandOutput.asString()
-                            CommandExecutionResult(
-                                getControllerName(),
-                                command,
-                                commandResult.split("\n"),
-                                false,
-                                e.message,
-                                e.stackTraceToString()
-                            )
-                        }
-                    )
-                }
-                runBlocking {
-                    call.respondText(ContentType.Text.Plain, status = HttpStatusCode.OK) {
-                        gson.toJson(future.get()!!)
-                    }
-                }
-            }
-        }
-    }
+private fun getServer(): MinecraftServer{
+    return minecraftServer
 }
 
-suspend fun WebSocketSession.sendPacket(s: WSPacket<*>) {
-    send(PacketRegistry.encodePacket(s))
-}
-
-fun toMultiLineErrorMessage(s: String): List<String> {
-    val list = s.split("error").toMutableList()
-    val res = mutableListOf(list[0] + "error")
-    list.removeAt(0)
-    res += list.joinToString(separator = "error")
-    return res
+suspend fun WebSocketSession.sendPacket(s: WSPacket) {
+    send(WSPacket.CODEC.encodeStart(JsonOps.INSTANCE, s).getOrThrow(false) {
+        logger.error("Failed to decode packet: $it")
+    }.toString())
 }
