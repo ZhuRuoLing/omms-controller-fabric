@@ -32,9 +32,9 @@ class WSPacketHandlerImpl(
         minecraftServer.execute {
             try {
                 logger.debug("Command $line from console ${Integer.toHexString(this.hashCode())}")
-                minecraftServer.commandManager.dispatcher.execute(
+                minecraftServer.commands.dispatcher.execute(
                     line,
-                    minecraftServer.commandSource
+                    minecraftServer.createCommandSourceStack()
                 )
             } catch (e: Exception) {
                 if (e is CommandSyntaxException) {
@@ -45,8 +45,8 @@ class WSPacketHandlerImpl(
     }
 
     override fun onCompletionRequest(requestId: String, partialCommand: String, cursorPos: Int) {
-        val dispatcher = minecraftServer.commandManager.dispatcher
-        val parseResult = dispatcher.parse(partialCommand, minecraftServer.commandSource)
+        val dispatcher = minecraftServer.commands.dispatcher
+        val parseResult = dispatcher.parse(partialCommand, minecraftServer.createCommandSourceStack())
         println(parseResult.reader.totalLength)
         println(cursorPos)
         dispatcher.getCompletionSuggestions(parseResult, cursorPos)

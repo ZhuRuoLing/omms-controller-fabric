@@ -13,12 +13,12 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.minecraft.server.MinecraftServer
-import net.minecraft.text.Style
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
 import icu.takeneko.omms.controller.fabric.config.Config
 import icu.takeneko.omms.controller.fabric.config.Config.getControllerName
 import icu.takeneko.omms.controller.fabric.util.Util
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
 import org.slf4j.Logger
 import java.util.concurrent.CancellationException
 
@@ -61,12 +61,12 @@ class WebsocketChatClient(private val minecraftServer: MinecraftServer) : Thread
                 minecraftServer.execute {
                     val broadcast = Util.gson.fromJson(content, Broadcast::class.java)
                     if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
-                        minecraftServer.playerManager
-                            .broadcast(Util.fromBroadcastToQQ(broadcast), false)
+                        minecraftServer.playerList
+                            .broadcastSystemMessage(Util.fromBroadcastToQQ(broadcast), false)
                     }
                     if (broadcast.getServer() != getControllerName()) {
-                        minecraftServer.playerManager
-                            .broadcast(Util.fromBroadcast(broadcast), false)
+                        minecraftServer.playerList
+                            .broadcastSystemMessage(Util.fromBroadcast(broadcast), false)
                     }
                 }
             }
@@ -99,9 +99,9 @@ class WebsocketChatClient(private val minecraftServer: MinecraftServer) : Thread
                 while (true) {
                     try {
                         launchWS()
-                        minecraftServer.playerManager.broadcast(
-                            Text.literal("Chatbridge disconnected from server, client will try to reconnect after 3 seconds.")
-                                .copy().setStyle(Style.EMPTY.withColor(Formatting.YELLOW)),
+                        minecraftServer.playerList.broadcastSystemMessage(
+                            Component.literal("Chatbridge disconnected from server, client will try to reconnect after 3 seconds.")
+                                .copy().withStyle(ChatFormatting.YELLOW),
                             false
                         )
                         //logger.warn("Websocket Chatbridge disconnected from server. Client will try to reconnect after 3 seconds.")
@@ -129,9 +129,9 @@ class WebsocketChatClient(private val minecraftServer: MinecraftServer) : Thread
             path = "chatbridge"
         ) {
             //logger.info("Chatbridge Connected.")
-            minecraftServer.playerManager.broadcast(
-                Text.literal("Chatbridge Connected.")
-                    .copy().setStyle(Style.EMPTY.withColor(Formatting.AQUA)),
+            minecraftServer.playerList.broadcastSystemMessage(
+                Component.literal("Chatbridge Connected.")
+                    .copy().withStyle(ChatFormatting.AQUA),
                 false
             )
             val outRoutine = launch { broadcastFromWS(this@webSocket) }

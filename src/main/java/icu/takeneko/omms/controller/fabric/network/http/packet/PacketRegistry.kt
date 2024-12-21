@@ -3,12 +3,11 @@ package icu.takeneko.omms.controller.fabric.network.http.packet
 import com.mojang.serialization.MapCodec
 import icu.takeneko.omms.controller.fabric.OmmsControllerFabric
 import icu.takeneko.omms.controller.fabric.util.Lookup
-import io.ktor.util.*
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
 
-object PacketRegistry :Lookup<Identifier, MapCodec<WSPacket>>{
-    private val registry = mutableMapOf<Identifier, MapCodec<WSPacket>>()
-    private val reversedRegistry = mutableMapOf<MapCodec<WSPacket>, Identifier>()
+object PacketRegistry :Lookup<ResourceLocation, MapCodec<WSPacket>>{
+    private val registry = mutableMapOf<ResourceLocation, MapCodec<WSPacket>>()
+    private val reversedRegistry = mutableMapOf<MapCodec<WSPacket>, ResourceLocation>()
 
     init {
         register(
@@ -41,15 +40,15 @@ object PacketRegistry :Lookup<Identifier, MapCodec<WSPacket>>{
         )
     }
 
-    override fun get(key: Identifier): MapCodec<WSPacket>? {
+    override fun get(key: ResourceLocation): MapCodec<WSPacket>? {
         return registry[key]
     }
 
-    fun getKey(value: MapCodec<WSPacket>): Identifier? {
+    fun getKey(value: MapCodec<WSPacket>): ResourceLocation? {
         return reversedRegistry[value]
     }
 
-    fun register(key: Identifier, value: MapCodec<WSPacket>) {
+    fun register(key: ResourceLocation, value: MapCodec<WSPacket>) {
         if (get(key) != null) {
             throw IllegalArgumentException("Duplicate packetType: $key")
         }
@@ -57,7 +56,7 @@ object PacketRegistry :Lookup<Identifier, MapCodec<WSPacket>>{
         reversedRegistry[value] = key
     }
 
-    fun reversedLookup(): Lookup<MapCodec<WSPacket>, Identifier> {
+    fun reversedLookup(): Lookup<MapCodec<WSPacket>, ResourceLocation> {
         return Lookup {
             return@Lookup getKey(it)
         }

@@ -161,12 +161,12 @@ public class PatchUtil {
 
 
     public static boolean patchMethod(String className, ClassNode node) {
-        String clzName = MappedNames.nameOfClassServerCommandSource.replace('.','/');
+        String clzName = MappedNames.nameOfClassCommandSourceStack.replace('.','/');
         List<MethodNode> methodNodes = new ArrayList<>();
         for (MethodNode methodNode : node.methods) {
             if (!Objects.equals(methodNode.desc, "(L%s;)Z".formatted(clzName)))continue;
             for (AbstractInsnNode insnNode : methodNode.instructions) {
-                //target INVOKEVIRTUAL net/minecraft/server/command/ServerCommandSource.hasPermissionLevel (I)Z
+                //target INVOKEVIRTUAL net/minecraft/server/command/CommandSourceStack.hasPermission (I)Z
                 if (insnNode instanceof MethodInsnNode methodInsnNode) {
                     if (methodInsnNode.owner.equals(clzName) &&
                             methodInsnNode.name.equals(MappedNames.nameOfMethodHasPermissionLevel) &&

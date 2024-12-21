@@ -2,24 +2,23 @@ package icu.takeneko.omms.controller.fabric.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.mojang.brigadier.context.CommandContext;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import icu.takeneko.omms.controller.fabric.util.logging.MemoryAppender;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-import icu.takeneko.omms.controller.fabric.announcement.Announcement;
 import icu.takeneko.omms.controller.fabric.config.Config;
 import icu.takeneko.omms.controller.fabric.config.SharedVariable;
 import icu.takeneko.omms.controller.fabric.network.Broadcast;
-import icu.takeneko.omms.controller.fabric.network.ControllerTypes;
 import icu.takeneko.omms.controller.fabric.network.Status;
 import icu.takeneko.omms.controller.fabric.network.UdpBroadcastSender;
 import org.apache.logging.log4j.LogManager;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -27,16 +26,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.time.chrono.Chronology;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.FormatStyle;
 import java.util.*;
 
 public class Util {
-    public static final Text LEFT_BRACKET = Text.of("[");
-    public static final Text RIGHT_BRACKET = Text.of("]");
-    public static final Text SPACE = Text.of(" ");
-    public static final Identifier AUTH_PACKET_CHANNEL = new Identifier("omms_auth","auth");
+    public static final Component LEFT_BRACKET = Component.literal("[");
+    public static final Component RIGHT_BRACKET = Component.literal("]");
+    public static final Component SPACE = Component.literal(" ");
+    public static final ResourceLocation AUTH_PACKET_CHANNEL = new ResourceLocation("omms_auth","auth");
 
     public static final int PACKET_ID = kotlin.random.Random.Default.nextInt();
 
@@ -87,49 +83,30 @@ public class Util {
     }
 
     public static boolean resolveToken(int token, int password, int i, int j, int k) {
-        int t = token;
-        int var1 = t ^ password;
+        int var1 = token ^ password;
 
         var1 = var1 - i - (j - k);
         return var1 == 114514;
     }
 
-    public static Text fromServerString(String displayName, String proxyName, boolean isCurrentServer, boolean isMissingServer) {
+    public static Component fromServerString(String displayName, String proxyName, boolean isCurrentServer, boolean isMissingServer) {
         Style style = Style.EMPTY;
         if (isMissingServer) {
-            style = style.withColor(TextColor.fromFormatting(Formatting.RED));
-            style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Missing server name mapping key.")));
+            style = style.withColor(ChatFormatting.RED);
+            style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Missing server name mapping key.")));
         } else {
             if (isCurrentServer) {
-                style = style.withColor(TextColor.fromFormatting(Formatting.YELLOW));
-                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Current server")));
+                style = style.withColor(ChatFormatting.YELLOW);
+                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Current server")));
             } else {
-                style = style.withColor(Formatting.AQUA);
+                style = style.withColor(ChatFormatting.AQUA);
                 style = style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/server %s".formatted(proxyName)));
-                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Goto server %s".formatted(displayName))));
+                style = style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Goto server %s".formatted(displayName))));
             }
         }
-        Text name = Text.of(displayName).copyContentOnly().setStyle(style);
-        List<Text> texts = List.of(Util.LEFT_BRACKET, name, Util.RIGHT_BRACKET);
-        return Texts.join(texts, Text.empty());
-    }
-
-    public static List<Text> fromAnnouncement(Announcement announcement) {
-        Style style = Style.EMPTY;
-        String pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.FULL, FormatStyle.FULL, Chronology.ofLocale(Locale.getDefault()), Locale.getDefault());
-        SimpleDateFormat format = new SimpleDateFormat(pattern);
-        Text timeText = Text.of("Published at %s\n".formatted(format.format(new Date(announcement.getTimeMillis()))))
-                .copy().setStyle(style.withColor(TextColor.fromFormatting(Formatting.LIGHT_PURPLE)).withBold(true));
-        Text titleText = Text.of("Title: "+announcement.getTitle()).copy().setStyle(style.withColor(Formatting.GREEN).withBold(true));
-        ArrayList<Text> textArrayList = new ArrayList<>();
-        textArrayList.add(Text.empty());
-        textArrayList.add(titleText);
-        textArrayList.add(timeText);
-        for (String s : announcement.getContent()) {
-            textArrayList.add(Text.of(s));
-        }
-        textArrayList.add(Text.empty());
-        return textArrayList;
+        Component name = Component.literal(displayName).copy().setStyle(style);
+        List<Component> texts = List.of(Util.LEFT_BRACKET, name, Util.RIGHT_BRACKET);
+        return ComponentUtils.formatList(texts, Component.empty());
     }
 
     public static void addAppender() {
@@ -143,32 +120,32 @@ public class Util {
     }
 
 
-    public static Text fromBroadcast(Broadcast broadcast) {
+    public static Component fromBroadcast(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
-                Text.of("<").copyContentOnly(),
-                Text.of(broadcast.getPlayer()).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
-                LEFT_BRACKET.copyContentOnly(),
-                Text.of(broadcast.getServer().equals("OMMS CENTRAL") ? "SERVER" : broadcast.getServer()).copyContentOnly().setStyle(style.withColor(Formatting.GREEN)/*.withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))*/),
-                Text.of("]>").copyContentOnly(),
-                Text.of(broadcast.getContent()).copyContentOnly()
+        List<Component> texts = List.of(Component.literal(broadcast.getChannel()).copy().setStyle(style.withColor(ChatFormatting.AQUA)),
+                Component.literal("<").copy(),
+                Component.literal(broadcast.getPlayer()).copy().setStyle(style.withColor(ChatFormatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+                LEFT_BRACKET.copy(),
+                Component.literal(broadcast.getServer().equals("OMMS CENTRAL") ? "SERVER" : broadcast.getServer()).copy().setStyle(style.withColor(ChatFormatting.GREEN)/*.withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))*/),
+                Component.literal("]>").copy(),
+                Component.literal(broadcast.getContent()).copy()
         );
-        return Texts.join(texts, Text.of(""));
+        return ComponentUtils.formatList(texts, Component.literal(""));
     }
 
-    public static Text fromBroadcastToQQ(Broadcast broadcast) {
+    public static Component fromBroadcastToQQ(Broadcast broadcast) {
         Style style = Style.EMPTY;
 
-        List<Text> texts = List.of(Text.of(broadcast.getChannel()).copyContentOnly().setStyle(style.withColor(Formatting.AQUA)),
-                Text.of("<").copyContentOnly(),
-                Text.of(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copyContentOnly().setStyle(style.withColor(Formatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
-                LEFT_BRACKET.copyContentOnly(),
-                Text.of(broadcast.getServer() + " -> QQ").copyContentOnly().setStyle(style.withColor(Formatting.GREEN)),
-                Text.of("]>").copyContentOnly(),
-                Text.of(broadcast.getContent()).copyContentOnly()
+        List<Component> texts = List.of(Component.literal(broadcast.getChannel()).copy().setStyle(style.withColor(ChatFormatting.AQUA)),
+            Component.literal("<").copy(),
+            Component.literal(broadcast.getPlayer().replaceFirst("\ufff3\ufff4", "")).copy().setStyle(style.withColor(ChatFormatting.YELLOW).withBold(true).withObfuscated(Objects.equals(broadcast.getServer(), "OMMS CENTRAL"))),
+                LEFT_BRACKET.copy(),
+            Component.literal(broadcast.getServer() + " -> QQ").copy().setStyle(style.withColor(ChatFormatting.GREEN)),
+            Component.literal("]>").copy(),
+            Component.literal(broadcast.getContent()).copy()
         );
-        return Texts.join(texts, Text.of(""));
+        return ComponentUtils.formatList(texts, Component.literal(""));
     }
 
 
@@ -200,9 +177,9 @@ public class Util {
     public static void sendStatus(MinecraftServer server) {
         var status = new Status(
                 Config.INSTANCE.getControllerName(),
-                ControllerTypes.FABRIC,
-                server.getCurrentPlayerCount(),
-                server.getMaxPlayerCount(),
+                "fabric",
+                server.getPlayerCount(),
+                server.getMaxPlayers(),
                 Arrays.asList(server.getPlayerNames())
         );
         try {
@@ -210,39 +187,6 @@ public class Util {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public static int sendAnnouncementFromUrlToPlayer(CommandContext<ServerCommandSource> context, String url) {
-        try {
-            var value = invokeHttpGetRequest(url);
-            if (value.getLeft() != 200){
-                context.getSource().sendError(Text.of("Cannot communicate with OMMS Central Server."));
-                return -1;
-            }
-            String result = value.getRight();
-            if (result != null) {
-                if (result.equals("NO_ANNOUNCEMENT")) {
-                    Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
-                    context.getSource().sendFeedback(() -> text, false);
-                    return 0;
-                }
-                try {
-                    var announcement = gson.fromJson(result, Announcement.class);
-                    fromAnnouncement(announcement).forEach(text -> context.getSource().sendFeedback(() -> text, false));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-                Text text = Texts.join(Text.of("No announcement.").copyContentOnly().getWithStyle(Style.EMPTY.withColor(Formatting.AQUA)), Text.empty());
-                context.getSource().sendFeedback(() -> text, false);
-                return 0;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return 0;
-
-
     }
 
     public static void submitToExecutor(Runnable runnable) {
@@ -275,7 +219,7 @@ public class Util {
         });
     }
 
-    public static Broadcast toPlayerConnectionStateBroadcast(String playerName, Text stateReason) {
+    public static Broadcast toPlayerConnectionStateBroadcast(String playerName, Component stateReason) {
         return new Broadcast(Config.INSTANCE.getChatChannel(),
                 Config.INSTANCE.getControllerName(),
                 playerName,

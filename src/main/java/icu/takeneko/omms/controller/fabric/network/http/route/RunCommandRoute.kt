@@ -26,7 +26,7 @@ fun Route.runCommand(logger: Logger, serverSupplier: Supplier<MinecraftServer>) 
             val commandSource = commandOutput.createOmmsCommandSource()
             future.complete(
                 try {
-                    minecraftServer.commandManager.dispatcher.execute(command, commandSource)
+                    minecraftServer.commands.dispatcher.execute(command, commandSource)
                     val commandResult = commandOutput.asString()
                     CommandExecutionResult(
                         getControllerName(),

@@ -1,43 +1,48 @@
 package icu.takeneko.omms.controller.fabric.mixin;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import icu.takeneko.omms.controller.fabric.config.Config;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.network.protocol.game.ClientboundTabListPacket;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
-@Mixin(PlayerListHeaderS2CPacket.class)
+@Mixin(ClientboundTabListPacket.class)
 public class PlayerListHeaderMixin {
     @Final
     @Mutable
     @Shadow
-    private Text footer;
+    private Component footer;
 
-    @ModifyVariable(method = "<init>(Lnet/minecraft/text/Text;Lnet/minecraft/text/Text;)V", at = @At("HEAD"), index = 2, name = "footer", argsOnly = true)
-    private static Text modify(Text footer) {
-        if (footer.getString().isEmpty()) {
-            return Config.INSTANCE.getCustomFooter();
+    @WrapOperation(
+        method = "<init>(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/Component;)V",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/network/protocol/game/ClientboundTabListPacket;footer:Lnet/minecraft/network/chat/Component;"
+        )
+    )
+    private void modifyFooter(ClientboundTabListPacket instance, Component value, Operation<Void> original) {
+        Component result;
+        if (value.getString().isEmpty()) {
+            result = Config.INSTANCE.getCustomFooter();
+        } else {
+            result = ComponentUtils.formatList(
+                List.of(
+                    value,
+                    Config.INSTANCE.getCustomFooter()
+                ),
+                Component.literal("\n")
+            );
         }
-        return Texts.join(List.of(footer, Config.INSTANCE.getCustomFooter()), Text.literal("\n"));
+        original.call(this, result);
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/network/PacketByteBuf;)V", at = @At("RETURN"))
-    void modifyByBuf(PacketByteBuf buf, CallbackInfo ci) {
-        var footerText = footer.copy();
-        if (footerText.getString().isEmpty()) {
-            this.footer = Config.INSTANCE.getCustomFooter();
-            return;
-        }
-        this.footer = Texts.join(List.of(footerText, Config.INSTANCE.getCustomFooter()), Text.literal("\n"));
-    }
 }

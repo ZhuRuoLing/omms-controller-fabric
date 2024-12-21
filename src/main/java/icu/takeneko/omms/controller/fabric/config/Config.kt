@@ -1,8 +1,8 @@
 package icu.takeneko.omms.controller.fabric.config
 
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import java.io.FileReader
 import java.nio.file.Files
 import java.util.*
@@ -114,9 +114,9 @@ object Config {
         }
     }
 
-    fun getCustomFooter(): MutableText {
+    fun getCustomFooter(): MutableComponent {
 
-        return Text.literal(customFooter)
+        return Component.literal(customFooter)
     }
 
     fun isEnableChatBridge(): Boolean {

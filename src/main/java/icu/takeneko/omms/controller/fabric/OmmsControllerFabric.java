@@ -10,13 +10,11 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
-import icu.takeneko.omms.controller.fabric.command.AnnouncementCommand;
 import icu.takeneko.omms.controller.fabric.command.QQCommand;
 import icu.takeneko.omms.controller.fabric.command.SendToConsoleCommand;
 import icu.takeneko.omms.controller.fabric.config.ChatbridgeImplementation;
@@ -28,19 +26,16 @@ import icu.takeneko.omms.controller.fabric.network.UdpReceiver;
 import icu.takeneko.omms.controller.fabric.network.WebsocketChatClient;
 import icu.takeneko.omms.controller.fabric.permission.MappedNames;
 import icu.takeneko.omms.controller.fabric.permission.PatchUtil;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-
-import static net.minecraft.server.command.CommandManager.literal;
 
 public class OmmsControllerFabric implements DedicatedServerModInitializer {
 
     public static final int CLIENT_VERSION = 1;
 
-    public static Identifier of(String path){
-        return Identifier.of("omms", path);
+    public static ResourceLocation of(String path){
+        return new ResourceLocation("omms", path);
     }
 
     //private final Logger logger = LogUtils.getLogger();
@@ -89,32 +84,28 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             Util.addAppender();
         }
 
-        CommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess, environment) ->
-                new AnnouncementCommand().register(dispatcher)));
-
         if (Config.INSTANCE.isEnableChatBridge()) {
             CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                     new QQCommand().register(dispatcher));
-
         }
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("crashNow")
-                        .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+                dispatcher.register(LiteralArgumentBuilder.<CommandSourceStack>literal("crashNow")
+                        .requires(serverCommandSource -> serverCommandSource.hasPermission(4))
                         .executes(context -> {
                             SharedVariable.shouldCrash = (true);
                             return 0;
                         })));
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                dispatcher.register(LiteralArgumentBuilder.<ServerCommandSource>literal("omms-reload")
-                        .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+                dispatcher.register(LiteralArgumentBuilder.<CommandSourceStack>literal("omms-reload")
+                        .requires(serverCommandSource -> serverCommandSource.hasPermission(4))
                         .executes(context -> {
                             Config.INSTANCE.load();
                             HttpServerMainKt.httpServer.stop(1, 1);
                             HttpServerMainKt.httpServerThread.interrupt();
                             HttpServerMainKt.httpServerThread = HttpServerMainKt.serverMain(Config.INSTANCE.getHttpServerPort(), context.getSource().getServer());
-                            context.getSource().sendFeedback(() -> Text.of("Config reloaded.").copyContentOnly().setStyle(Style.EMPTY.withColor(TextColor.fromFormatting(Formatting.AQUA))), true);
+                            context.getSource().sendSuccess(() -> Component.literal("Config reloaded.").copy().withStyle(ChatFormatting.AQUA), true);
                             return 0;
                         })));
 
@@ -171,11 +162,11 @@ public class OmmsControllerFabric implements DedicatedServerModInitializer {
             if (!(Objects.equals(broadcast.getChannel(), Config.INSTANCE.getChatChannel()))) return;
             //LogUtils.getLogger().info(String.format("%s <%s[%s]> %s", Objects.requireNonNull(broadcast).getChannel(), broadcast.getPlayer(), broadcast.getServer(), broadcast.getContent()));
             if (broadcast.getPlayer().startsWith("\ufff3\ufff4")) {
-                server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcastToQQ(broadcast), false));
+                server.execute(() -> server.getPlayerList().broadcastSystemMessage(Util.fromBroadcastToQQ(broadcast), false));
                 return;
             }
             if (!Objects.equals(broadcast.getServer(), Config.INSTANCE.getControllerName())) {
-                server.execute(() -> server.getPlayerManager().broadcast(Util.fromBroadcast(broadcast), false));
+                server.execute(() -> server.getPlayerList().broadcastSystemMessage(Util.fromBroadcast(broadcast), false));
             }
         });
 

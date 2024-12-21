@@ -1,7 +1,7 @@
 package icu.takeneko.omms.controller.fabric.permission;
 
 import net.fabricmc.loader.api.FabricLoader;
-
+import net.fabricmc.loader.api.MappingResolver;
 import java.util.Arrays;
 import java.util.List;
 

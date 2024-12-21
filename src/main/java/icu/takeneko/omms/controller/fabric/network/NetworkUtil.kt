@@ -11,9 +11,8 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
-import net.minecraft.text.Style
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
 import org.slf4j.LoggerFactory
 
 private val httpClient by lazy {
@@ -52,7 +51,7 @@ fun queryPlayerInAllWhitelist(playerName: String): List<String>{
     }
 }
 
-fun authPlayer(playerName: String): Text? {
+fun authPlayer(playerName: String): Component? {
     val url = "http://${Config.getHttpQueryAddress()}:${Config.getHttpQueryPort()}/whitelist/queryAll/$playerName"
     return runBlocking {
         try {
@@ -62,7 +61,7 @@ fun authPlayer(playerName: String): Text? {
             } else {
                 val list = resp.body<List<String>>()
                 if (Config.getWhitelistName() !in list) {
-                    Text.translatable("multiplayer.disconnect.not_whitelisted").copyContentOnly().setStyle(Style.EMPTY.withColor(Formatting.RED))
+                    Component.literal("multiplayer.disconnect.not_whitelisted").copy().withStyle(ChatFormatting.RED)
                 } else {
                     logger.info("Successfully authed player $playerName")
                     null
@@ -70,8 +69,8 @@ fun authPlayer(playerName: String): Text? {
             }
         } catch (e: Exception) {
             logger.debug("Cannot auth with OMMS Central server.", e)
-            Text.literal("Cannot auth with OMMS Central server.\nCaused By:")
-                .append(Text.of(e.toString()).copyContentOnly().setStyle(Style.EMPTY.withColor(Formatting.RED)))
+            Component.literal("Cannot auth with OMMS Central server.\nCaused By:")
+                .append(Component.literal(e.toString()).copy().withStyle(ChatFormatting.RED))
 
         }
     }

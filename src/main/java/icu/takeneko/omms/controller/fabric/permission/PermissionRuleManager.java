@@ -1,14 +1,12 @@
 package icu.takeneko.omms.controller.fabric.permission;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,14 +49,14 @@ public class PermissionRuleManager {
         }));
     }
 
-    public boolean checkPermission(String className, ServerCommandSource commandSource) {
+    public boolean checkPermission(String className, CommandSourceStack commandSource) {
         if (commandSource.getEntity() == null) return true;
         if (permissionRuleMap.containsKey(className)) {
             return permissionRuleMap.get(className).rules.stream().allMatch(it -> switch (it.permissionType) {
-                case PERMISSION_REQUIREMENT -> commandSource.hasPermissionLevel(it.permissionRequirement);
-                case PLAYER_BLACKLIST -> commandSource.isExecutedByPlayer() &&
+                case PERMISSION_REQUIREMENT -> commandSource.hasPermission(it.permissionRequirement);
+                case PLAYER_BLACKLIST -> commandSource.isPlayer() &&
                         !it.playerAllowed.contains(commandSource.getPlayer().getGameProfile().getName());
-                case PLAYER_WHITELIST -> commandSource.isExecutedByPlayer() &&
+                case PLAYER_WHITELIST -> commandSource.isPlayer() &&
                         it.playerAllowed.contains(commandSource.getPlayer().getGameProfile().getName());
             });
         }

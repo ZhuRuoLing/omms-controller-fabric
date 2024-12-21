@@ -17,9 +17,9 @@ fun Route.status(logger: Logger, serverSupplier: Supplier<MinecraftServer>) {
         logger.debug("Querying status.")
         val status = Status(
             getControllerName(),
-            ControllerTypes.FABRIC,
-            minecraftServer.currentPlayerCount,
-            minecraftServer.maxPlayerCount,
+            "fabric",
+            minecraftServer.playerCount,
+            minecraftServer.maxPlayers,
             listOf(*minecraftServer.playerNames)
         )
         call.respondText {

@@ -3,8 +3,7 @@ package icu.takeneko.omms.controller.fabric.network.http.packet;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.util.StringIdentifiable;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.util.StringRepresentable;
 
 import java.util.Optional;
 
@@ -37,14 +36,14 @@ public class WSAckPacket implements WSPacket {
         }
     }
 
-    public enum Action implements StringIdentifiable {
+    public enum Action implements StringRepresentable {
         CONNECT, DISCONNECT;
 
-        public static final Codec<Action> CODEC = StringIdentifiable.createCodec(Action::values);
+        public static final Codec<Action> CODEC = StringRepresentable.fromEnum(Action::values);
+
 
         @Override
-        @NotNull
-        public String asString() {
+        public String getSerializedName() {
             return name();
         }
     }
